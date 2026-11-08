@@ -26,6 +26,14 @@ export type { OsmWay, OsmWaySource, OsmElementType, LatLon } from './osm/types'
 // interpretation
 export { interpretLanes, type Tags } from './lanes/interpret'
 export {
+  cyclewayDirection,
+  hasCycleways,
+  type Cycleway,
+  type CyclewaySide,
+  type CyclewayType,
+  type RoadCycleways,
+} from './lanes/cycleway'
+export {
   TURN_VALUES,
   ACCESS_MODES,
   totalLanes,

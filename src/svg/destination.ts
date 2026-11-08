@@ -6,7 +6,7 @@ import { hasDestinations, type Lane, type RoadLanes } from '../lanes/model'
 import { el, esc, round, text, toElement, SVG_NS } from './el'
 import { ICONS } from './icons'
 import { label, type Locale } from './labels'
-import { columns, MARGIN, toRoadLanes, type Column, type LanesInput, type LayoutOptions } from './layout'
+import { layout, MARGIN, toRoadLanes, type Column, type LanesInput, type LayoutOptions } from './layout'
 
 export interface DestinationSignOptions extends LayoutOptions {
   ariaLabel?: string
@@ -256,12 +256,13 @@ export function renderDestinationSignSvg(input: LanesInput, options: Destination
   const road: RoadLanes = toRoadLanes(input)
   if (!hasDestinations(road)) return ''
   const { laneWidth = 64, locale = 'en' } = options
-  const cols = columns(road, options)
+  const lay = layout(road, options)
+  const cols = lay.cols.filter((c) => !c.placeholder)
   const gs = groups(cols)
   if (!gs.length) return ''
   const laid = gs.map((g) => layoutPanel(g, laneWidth, road.road.highway))
   const panelH = Math.max(...laid.map((l) => l.height))
-  const width = MARGIN * 2 + cols.length * laneWidth
+  const width = lay.width
   const height = MARGIN * 2 + panelH
   const aria = options.ariaLabel ?? label(locale, 'destinations', options.labels)
   return el(

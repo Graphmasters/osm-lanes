@@ -3,7 +3,7 @@ import { interpretLanes } from '../src/lanes/interpret'
 import { arrowSvg } from '../src/svg/arrows'
 import { renderDestinationSignSvg, wrap } from '../src/svg/destination'
 import { esc } from '../src/svg/el'
-import { columns } from '../src/svg/layout'
+import { columns, layout } from '../src/svg/layout'
 import { getLanesLegend } from '../src/svg/legend'
 import { laneChips, laneSigns, renderLanesSvg } from '../src/svg/render'
 import { ICONS } from '../src/svg/icons'
@@ -216,4 +216,61 @@ describe('legend', () => {
 
 it('esc covers all XML specials', () => {
   expect(esc(`<a href="x">&'`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;')
+})
+
+describe('cycleways', () => {
+  it('adds strips at the edges and keeps the destination sign aligned', () => {
+    const tags = {
+      lanes: '2',
+      'destination:lanes:forward': 'Mitte',
+      'cycleway:left': 'track',
+      'cycleway:right': 'lane',
+    }
+    const road = interpretLanes(tags)
+    const lay = layout(road)
+    expect(lay.strips.map((s) => [s.screenSide, s.cycleway.type, s.arrows])).toEqual([
+      ['left', 'track', 'down'],
+      ['right', 'lane', 'up'],
+    ])
+    // left track: 32 wide + 8 kerb before the first lane column
+    expect(lay.cols[0]!.x).toBe(8 + 32 + 8)
+    expect(lay.width).toBe(8 + 40 + 128 + 32 + 8)
+    const svg = renderLanesSvg(road)
+    expect(svg).toContain('osml-cycleway-track')
+    expect(svg).toContain('osml-cycleway-lane')
+    expect(svg).toContain(`width="${lay.width}"`)
+    expect(renderDestinationSignSvg(road)).toContain(`width="${lay.width}"`)
+  })
+
+  it('draws an advisory lane with a dashed line and a contraflow arrow', () => {
+    const road = interpretLanes({ oneway: 'yes', lanes: '1', 'cycleway:left': 'lane', 'cycleway:left:lane': 'advisory', 'cycleway:left:oneway': '-1' })
+    expect(layout(road).strips[0]!.arrows).toBe('down')
+    expect(renderLanesSvg(road)).toContain('stroke-dasharray="10 8"')
+  })
+
+  it('shows only the outer edge in a one-direction view of a two-way road', () => {
+    const road = interpretLanes({ lanes: '2', 'cycleway:both': 'lane' })
+    expect(layout(road, { direction: 'forward' }).strips.map((s) => s.screenSide)).toEqual(['right'])
+    const back = layout(road, { direction: 'backward' }).strips
+    expect(back.map((s) => [s.screenSide, s.cycleway.side, s.arrows])).toEqual([['right', 'left', 'up']])
+  })
+
+  it('marks shared lanes and shared bus lanes inside the outermost lane', () => {
+    const shared = renderLanesSvg({ lanes: '2', cycleway: 'shared_lane' })
+    expect(shared.match(/osml-cycleway-shared_lane/g)).toHaveLength(2)
+    const road = interpretLanes({ oneway: 'yes', lanes: '2', 'bus:lanes': '|designated', 'cycleway:right': 'share_busway' })
+    const lay = layout(road)
+    expect(lay.strips).toEqual([])
+    expect(lay.shared[0]!.column).toBe(lay.cols[1])
+    expect(getLanesLegend(road).map((e) => e.id)).toContain('cycleway.share_busway.')
+  })
+
+  it('draws a placeholder carriageway for cycleways on roads without lane tags', () => {
+    const road = interpretLanes({ highway: 'residential', 'cycleway:both': 'track' })
+    const lay = layout(road)
+    expect(lay.cols).toHaveLength(1)
+    expect(lay.cols[0]!.placeholder).toBe(true)
+    expect(renderLanesSvg(road)).toContain('no lane tags')
+    expect(renderLanesSvg({ highway: 'residential' })).toBe('')
+  })
 })
