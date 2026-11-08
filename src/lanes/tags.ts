@@ -35,6 +35,10 @@ export const SUPPORTED_TAGS: readonly SupportedTag[] = [
   { key: 'destination:symbol:lanes*', wikiUrl: `${WIKI}Key:destination:symbol`, description: 'Signposted symbols (airport, …) per lane.' },
   { key: 'destination:colour:lanes*', wikiUrl: `${WIKI}Key:destination:colour`, description: 'Background colour of the destination sign per lane.' },
   { key: 'overtaking', wikiUrl: `${WIKI}Key:overtaking`, description: 'Overtaking prohibition (solid centre line).' },
+  { key: 'cycleway / cycleway:both / cycleway:left / cycleway:right', wikiUrl: `${WIKI}Key:cycleway`, description: 'Cycle lanes, cycle tracks, shared lanes and separately mapped cycleways beside the carriageway.' },
+  { key: 'cycleway:*:lane', wikiUrl: `${WIKI}Key:cycleway:lane`, description: 'Kind of cycle lane: exclusive (solid line), advisory (dashed line) or pictogram.' },
+  { key: 'cycleway:*:oneway', wikiUrl: `${WIKI}Key:oneway`, description: 'Direction of a cycle lane or track (yes, -1, no), e.g. contraflow lanes.' },
+  { key: 'cycleway:*:width', wikiUrl: `${WIKI}Key:width`, description: 'Width of a cycle lane or track.' },
 ]
 
 /** General documentation of the `:lanes` suffix and direction conventions. */
@@ -49,6 +53,9 @@ export function wikiUrlForKey(key: string): string | undefined {
     .replace(/:(forward|backward|both_ways)$/, '')
     .replace(/:lanes(:.*)?$/, '')
     .replace(/:conditional$/, '')
+  if (base.startsWith('cycleway')) {
+    return base.endsWith(':lane') ? `${WIKI}Key:cycleway:lane` : `${WIKI}Key:cycleway`
+  }
   switch (base) {
     case 'lanes':
       return key.startsWith('lanes:both_ways') ? `${WIKI}Key:lanes:both_ways` : `${WIKI}Key:lanes`
@@ -74,7 +81,6 @@ export function wikiUrlForKey(key: string): string | undefined {
     case 'bicycle':
     case 'access':
     case 'motor_vehicle':
-    case 'cycleway':
     case 'busway':
       return `${WIKI}Key:${base}`
     case 'bus':

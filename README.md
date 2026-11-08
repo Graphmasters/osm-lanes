@@ -55,7 +55,7 @@ document.body.insertAdjacentHTML('beforeend', renderDestinationSignSvg(road) + r
 
 | Function | Returns |
 |---|---|
-| `interpretLanes(tags)` | `RoadLanes`: `forward`, `backward` and `bothWays` lanes (left to right as seen by their drivers), `oneway`, road-level values and `warnings`. |
+| `interpretLanes(tags)` | `RoadLanes`: `forward`, `backward` and `bothWays` lanes (left to right as seen by their drivers), `cycleways` (`left` / `right`), `oneway`, road-level values and `warnings`. |
 | `renderLanesSvg(input, options?)` | SVG string, or `''` if the way has no lanes. `input` may be tags, an `OsmWay` or a `RoadLanes`. |
 | `renderLanesElement(input, options?)` | `SVGSVGElement \| null` (browser). |
 | `renderDestinationSignSvg(input, options?)` | SVG string, or `''` without `destination:lanes`. Uses the same column layout as the lane diagram. |
@@ -108,9 +108,20 @@ supported too.
 | [`destination:symbol:lanes*`](https://wiki.openstreetmap.org/wiki/Key:destination:symbol) | Signposted symbols (airport, …) per lane. |
 | [`destination:colour:lanes*`](https://wiki.openstreetmap.org/wiki/Key:destination:colour) | Background colour of the destination sign per lane. |
 | [`overtaking`](https://wiki.openstreetmap.org/wiki/Key:overtaking) | Overtaking prohibition (solid centre line). |
+| [`cycleway / cycleway:both / cycleway:left / cycleway:right`](https://wiki.openstreetmap.org/wiki/Key:cycleway) | Cycle lanes, cycle tracks, shared lanes and separately mapped cycleways beside the carriageway. |
+| [`cycleway:*:lane`](https://wiki.openstreetmap.org/wiki/Key:cycleway:lane) | Kind of cycle lane: exclusive (solid line), advisory (dashed line) or pictogram. |
+| [`cycleway:*:oneway`](https://wiki.openstreetmap.org/wiki/Key:oneway) | Direction of a cycle lane or track (yes, -1, no), e.g. contraflow lanes. |
+| [`cycleway:*:width`](https://wiki.openstreetmap.org/wiki/Key:width) | Width of a cycle lane or track. |
 
-Not interpreted yet, and reported as notes: `placement`, `cycleway:*`, `*:lanes:conditional` and
-the count-style `lanes:psv` / `lanes:bus`.
+Cycleways are drawn at the road's edges: a cycle lane as a red strip on the carriageway (solid
+line for `exclusive`, dashed for `advisory`), a cycle track as a strip behind a kerb, a cycleway
+mapped as a separate way as a dashed outline, and `shared_lane` / `share_busway` as a bicycle
+pictogram in the outermost lane. `left` and `right` are relative to the way's direction. A plain
+`cycleway=*` applies to both sides of a two-way road and to the right side of a one-way road. If a
+road has cycleway tags but no lane tags, the carriageway is drawn as one unmarked block.
+
+Not interpreted yet, and reported as notes: `placement`, `cycleway:lanes`, `*:lanes:conditional`
+and the count-style `lanes:psv` / `lanes:bus`.
 
 ## How way selection works in the demo
 

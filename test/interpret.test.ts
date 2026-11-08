@@ -199,13 +199,54 @@ describe('per-lane values', () => {
       'maxspeed:lanes:conditional': '60 @ (22:00-06:00)|',
       placement: 'right_of:1',
       'cycleway:right': 'lane',
+      'cycleway:right:surface': 'asphalt',
+      'cycleway:lanes': 'no|lane',
     })
     const skipped = r.warnings.filter((w) => w.code === 'not-interpreted').map((w) => w.key)
-    expect(skipped).toEqual(['cycleway:right', 'maxspeed:lanes:conditional', 'placement'])
+    expect(skipped).toEqual(['cycleway:lanes', 'maxspeed:lanes:conditional', 'placement'])
   })
 
   it('flags unsuffixed turn:lanes on two-way roads', () => {
     const r = interpretLanes({ lanes: '2', 'turn:lanes': 'left|right' })
     expect(r.warnings.map((w) => w.key)).toContain('turn:lanes')
+  })
+})
+
+describe('cycleways', () => {
+  it('reads side-specific keys with :lane, :oneway and :width', () => {
+    const r = interpretLanes({
+      lanes: '2',
+      'cycleway:right': 'lane',
+      'cycleway:right:lane': 'advisory',
+      'cycleway:left': 'track',
+      'cycleway:left:oneway': 'no',
+      'cycleway:both:width': '1.5',
+    })
+    expect(r.cycleways.right).toMatchObject({ side: 'right', type: 'lane', lane: 'advisory', width: '1.5', key: 'cycleway:right' })
+    expect(r.cycleways.left).toMatchObject({ side: 'left', type: 'track', oneway: 'no', width: '1.5' })
+    expect(r.warnings.filter((w) => w.key?.startsWith('cycleway'))).toEqual([])
+  })
+
+  it('applies cycleway:both and plain cycleway to both sides of a two-way road', () => {
+    expect(Object.keys(interpretLanes({ 'cycleway:both': 'lane' }).cycleways)).toEqual(['left', 'right'])
+    const r = interpretLanes({ cycleway: 'shared_lane', 'cycleway:left': 'no' })
+    expect(r.cycleways.left).toBeUndefined()
+    expect(r.cycleways.right?.type).toBe('shared_lane')
+  })
+
+  it('puts plain cycleway on the right of a one-way road, opposite_* on the left', () => {
+    expect(interpretLanes({ oneway: 'yes', cycleway: 'lane' }).cycleways).toEqual({
+      right: { side: 'right', type: 'lane', value: 'lane', key: 'cycleway' },
+    })
+    const r = interpretLanes({ oneway: 'yes', cycleway: 'opposite_lane' })
+    expect(r.cycleways.left).toMatchObject({ type: 'lane', oneway: '-1' })
+    expect(r.cycleways.right).toBeUndefined()
+    expect(r.warnings.some((w) => w.key === 'cycleway' && /deprecated/.test(w.message))).toBe(true)
+  })
+
+  it('ignores no/none values and warns on unknown ones', () => {
+    const r = interpretLanes({ 'cycleway:left': 'none', 'cycleway:right': 'banana' })
+    expect(r.cycleways).toEqual({})
+    expect(r.warnings.some((w) => w.code === 'unknown-value' && w.key === 'cycleway:right')).toBe(true)
   })
 })

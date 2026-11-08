@@ -1,3 +1,4 @@
+import type { Cycleway } from '../lanes/cycleway'
 import type { AccessMode, RoadLanes } from '../lanes/model'
 import { KNOWN_ARROWS } from './arrows'
 import { label, type LabelKey, type Locale } from './labels'
@@ -10,6 +11,12 @@ export interface LegendEntry {
 export interface LegendOptions {
   locale?: Locale
   labels?: Partial<Record<string, string>>
+}
+
+/** Legend/tooltip label for a cycleway. */
+export function cyclewayLabelKey(cw: Cycleway): LabelKey {
+  if (cw.type === 'lane') return cw.lane === 'advisory' ? 'cycleway.lane.advisory' : 'cycleway.lane'
+  return `cycleway.${cw.type}` as LabelKey
 }
 
 /** Text glyph per turn value, matching the direction of the arrow in the lane graphic. */
@@ -46,6 +53,9 @@ export function getLanesLegend(road: RoadLanes, options: LegendOptions = {}): Le
     }
   }
   if (road.bothWays.length) add('both_ways', `⇅ ${L('both_ways')}`)
+  for (const cw of [road.cycleways?.left, road.cycleways?.right]) {
+    if (cw) add(`cycleway.${cw.type}.${cw.lane ?? ''}`, L(cyclewayLabelKey(cw)))
+  }
   for (const lane of lanes) {
     for (const [mode, value] of Object.entries(lane.access) as [AccessMode, string][]) {
       if (value === 'designated') add(`designated.${mode}`, `${L('access.designated')} ${L(`mode.${mode}` as LabelKey)}`)

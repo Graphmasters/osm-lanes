@@ -1,5 +1,7 @@
 // The normalised lane model produced by interpretLanes().
 
+import type { RoadCycleways } from './cycleway'
+
 /** Travel direction of a lane relative to the OSM way's node order. */
 export type LaneDirection = 'forward' | 'backward' | 'both_ways'
 
@@ -82,6 +84,8 @@ export interface RoadLanes {
   backward: Lane[]
   /** Centre lanes usable from both directions. */
   bothWays: Lane[]
+  /** Cycle lanes, tracks and shared lanes on the left/right side (relative to the way). */
+  cycleways: RoadCycleways
   /** Whole-road values that apply when no per-lane value is tagged. */
   road: {
     maxspeed?: string

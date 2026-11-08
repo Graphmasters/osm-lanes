@@ -17,6 +17,7 @@ import {
   type LaneWarning,
   type RoadLanes,
 } from './model'
+import { interpretCycleways } from './cycleway'
 import { parseCount, splitLanes, splitMulti } from './split'
 
 export type Tags = Readonly<Record<string, string>>
@@ -247,11 +248,12 @@ function notInterpreted(tags: Tags, warnings: LaneWarning[]) {
   const skipped = Object.keys(tags)
     .filter((k) => {
       if (HANDLED_LANE_KEY.test(k)) return false
+      // Other cycleway:* attributes (surface, segregated, …) do not change the drawing.
+      if (k.startsWith('cycleway')) return k.includes(':lanes')
       return (
         k.includes(':lanes') ||
         /^lanes:(psv|bus|taxi|hov)/.test(k) ||
-        k.startsWith('placement') ||
-        k.startsWith('cycleway')
+        k.startsWith('placement')
       )
     })
     .sort()
@@ -274,6 +276,7 @@ export function interpretLanes(tags: Tags): RoadLanes {
     forward: buildLanes(tags, 'forward', counts.forward, forwardSuffixes, warnings),
     backward: buildLanes(tags, 'backward', counts.backward, backwardSuffixes, warnings),
     bothWays: buildLanes(tags, 'both_ways', counts.bothWays, [':both_ways'], warnings),
+    cycleways: interpretCycleways(tags, oneway, warnings),
     road: {
       maxspeed: tags['maxspeed'],
       overtaking: tags['overtaking'],

@@ -38,6 +38,13 @@ export const LABELS = {
     'sign.maxheight': 'height limit',
     'sign.maxweight': 'weight limit',
     width: 'lane width',
+    'lanes.untagged': 'no lane tags',
+    'cycleway.lane': 'cycle lane',
+    'cycleway.lane.advisory': 'advisory cycle lane (dashed line)',
+    'cycleway.track': 'cycle track (separated from the carriageway)',
+    'cycleway.shared_lane': 'lane shared with bicycles (pictogram)',
+    'cycleway.share_busway': 'bus lane shared with bicycles',
+    'cycleway.separate': 'cycleway mapped as a separate way',
   },
   de: {
     lanes: 'Fahrstreifen',
@@ -74,6 +81,13 @@ export const LABELS = {
     'sign.maxheight': 'Höhenbeschränkung',
     'sign.maxweight': 'Gewichtsbeschränkung',
     width: 'Fahrstreifenbreite',
+    'lanes.untagged': 'nicht erfasst',
+    'cycleway.lane': 'Radfahrstreifen',
+    'cycleway.lane.advisory': 'Schutzstreifen (Leitlinie)',
+    'cycleway.track': 'Radweg (baulich getrennt)',
+    'cycleway.shared_lane': 'Fahrstreifen mit Fahrradpiktogramm',
+    'cycleway.share_busway': 'Bussonderfahrstreifen, Radverkehr frei',
+    'cycleway.separate': 'Radweg als eigener Weg erfasst',
   },
 } as const
 
