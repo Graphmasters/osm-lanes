@@ -1,4 +1,4 @@
-// MapLibre map with the OpenFreeMap "liberty" style. Road features of the `transportation`
+// MapLibre map with the Graphmasters basemap.world style (basemap.de design on OpenFreeMap tiles). Road features of the `transportation`
 // source layer are hoverable/clickable; their tile feature ID encodes the OSM way ID.
 // Features that planetiler merged from several ways (ID suffix 0) are not selectable: their ID
 // names only the first merged way, which is often not the segment under the pointer.
@@ -7,7 +7,7 @@ import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from 'maplibre
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { decodeTileFeatureId, type LatLon, type OsmWay } from '../src/index'
 
-export const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
+export const STYLE_URL = 'https://graphmasters.github.io/basemap-world-openfreemap/style.json'
 /** Below this zoom most tile features are merged from several ways, so selection is disabled. */
 export const MIN_SELECT_ZOOM = 14
 
@@ -73,17 +73,19 @@ export function createMap(
   let roadLayers: string[] = []
 
   map.on('load', () => {
-    roadLayers = map
+    // All line layers of the OpenMapTiles `transportation` layer; railways and other non-road
+    // classes are filtered out per feature (SELECTABLE_CLASSES). The source name differs between
+    // styles, so it is taken from the style itself.
+    const transport = map
       .getStyle()
-      .layers.filter(
-        (l) => l.type === 'line' && 'source-layer' in l && l['source-layer'] === 'transportation' && !/rail/.test(l.id),
-      )
-      .map((l) => l.id)
+      .layers.filter((l) => l.type === 'line' && 'source-layer' in l && l['source-layer'] === 'transportation')
+    roadLayers = transport.map((l) => l.id)
+    const tileSource = transport[0] && 'source' in transport[0] ? transport[0].source : 'openmaptiles'
 
     map.addLayer({
       id: HOVER_LAYER,
       type: 'line',
-      source: 'openmaptiles',
+      source: tileSource,
       'source-layer': 'transportation',
       filter: ['==', ['id'], -1],
       paint: { 'line-color': '#1a73e8', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 14], 'line-opacity': 0.45 },
