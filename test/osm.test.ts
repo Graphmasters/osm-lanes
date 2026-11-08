@@ -7,8 +7,8 @@ import {
   OsmRateLimitedError,
   OsmTimeoutError,
 } from '../src/osm/errors'
-import { DEFAULT_OVERPASS_ENDPOINT, fetchWay, overpassWayQuery } from '../src/osm/fetch'
-import { parseOverpassJson } from '../src/osm/parse'
+import { DEFAULT_OVERPASS_ENDPOINT, fetchWay, fetchWayFromOsmApi, osmApiWayUrl, overpassWayQuery } from '../src/osm/fetch'
+import { parseOsmApiJson, parseOverpassJson } from '../src/osm/parse'
 import { decodeTileFeatureId } from '../src/osm/tile-id'
 
 describe('decodeTileFeatureId', () => {
@@ -44,6 +44,7 @@ describe('parseOverpassJson', () => {
       ],
       bounds: { minlat: 52.0, minlon: 9.0, maxlat: 52.001, maxlon: 9.002 },
       dataTimestamp: '2026-11-08T12:00:00Z',
+      source: 'overpass',
     })
   })
   it('throws not found for missing or deleted ways', () => {
@@ -123,5 +124,61 @@ describe('fetchWay', () => {
     const p = fetchWay(1, { fetch: fetch as never, signal: controller.signal })
     controller.abort()
     await expect(p).rejects.toThrow(/Abort/)
+  })
+})
+
+const osmApiDoc = {
+  version: '0.6',
+  elements: [
+    { type: 'node', id: 2, lat: 52.001, lon: 9.002 },
+    { type: 'node', id: 1, lat: 52.0, lon: 9.0 },
+    { type: 'node', id: 3, lat: 51.999, lon: 9.004, tags: { highway: 'traffic_signals' } },
+    {
+      type: 'way',
+      id: 123456789,
+      timestamp: '2026-10-01T08:00:00Z',
+      version: 7,
+      nodes: [1, 2, 3],
+      tags: { highway: 'primary', lanes: '2' },
+    },
+  ],
+}
+
+describe('parseOsmApiJson', () => {
+  it('rebuilds geometry in way order and computes bounds', () => {
+    expect(parseOsmApiJson(osmApiDoc, 123456789)).toEqual({
+      type: 'way',
+      id: '123456789',
+      tags: { highway: 'primary', lanes: '2' },
+      geometry: [
+        { lat: 52.0, lon: 9.0 },
+        { lat: 52.001, lon: 9.002 },
+        { lat: 51.999, lon: 9.004 },
+      ],
+      bounds: { minlat: 51.999, minlon: 9.0, maxlat: 52.001, maxlon: 9.004 },
+      timestamp: '2026-10-01T08:00:00Z',
+      version: 7,
+      source: 'osm-api',
+    })
+  })
+  it('throws not found for missing or deleted ways', () => {
+    expect(() => parseOsmApiJson({ elements: [{ type: 'node', id: 123, lat: 0, lon: 0 }] }, 123)).toThrow(OsmNotFoundError)
+    expect(() => parseOsmApiJson({ elements: [{ type: 'way', id: 1, visible: false }] }, 1)).toThrow(OsmNotFoundError)
+  })
+})
+
+describe('fetchWayFromOsmApi', () => {
+  it('GETs /api/0.6/way/{id}/full.json', async () => {
+    const fetch = vi.fn(async () => response(200, JSON.stringify(osmApiDoc)))
+    const way = await fetchWayFromOsmApi('123456789', { fetch, baseUrl: 'https://osm.example.test/' })
+    expect(way.geometry).toHaveLength(3)
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('https://osm.example.test/api/0.6/way/123456789/full.json')
+    expect(init.method).toBe('GET')
+    expect(osmApiWayUrl('5')).toBe('https://api.openstreetmap.org/api/0.6/way/5/full.json')
+  })
+  it('maps 410 Gone to OsmNotFoundError and 509 to OsmRateLimitedError', async () => {
+    await expect(fetchWayFromOsmApi(1, { fetch: async () => response(410) })).rejects.toBeInstanceOf(OsmNotFoundError)
+    await expect(fetchWayFromOsmApi(1, { fetch: async () => response(509), retries: 0 })).rejects.toBeInstanceOf(OsmRateLimitedError)
   })
 })

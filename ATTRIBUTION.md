@@ -69,7 +69,10 @@ The demo application in `app/` does not bundle any map data. At runtime it uses:
 - **Vector tiles and the "Liberty" map style** from [OpenFreeMap](https://openfreemap.org/), using the
   [OpenMapTiles](https://www.openmaptiles.org/) schema (© OpenMapTiles). The credits are shown in the
   map's attribution control.
-- **Way data** from the [Overpass API](https://overpass-api.de/) instance operated by
+- **Way data** from the [OpenStreetMap API](https://wiki.openstreetmap.org/wiki/API_v0.6) operated by
+  the [OpenStreetMap Foundation](https://osmfoundation.org/), used under its
+  [API usage policy](https://operations.osmfoundation.org/policies/api/), and, as a fallback, from
+  the [Overpass API](https://overpass-api.de/) instance operated by
   [FOSSGIS e.V.](https://www.fossgis.de/), used under its
   [terms of use](https://www.fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/).
 - **[MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js)** (BSD-3-Clause), bundled into the
