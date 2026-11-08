@@ -28,7 +28,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "build:app": "vite build && node scripts/spa-fallback.mjs",
+    "build:app": "vite build",
     "dev": "vite",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
