@@ -1,0 +1,14 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (synthetic test fixture)",
+  "osm3s": { "timestamp_osm_base": "2026-11-08T12:00:00Z", "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL." },
+  "elements": [
+    {
+      "type": "way",
+      "id": 123456789,
+      "bounds": { "minlat": 52.0, "minlon": 9.0, "maxlat": 52.001, "maxlon": 9.002 },
+      "geometry": [ { "lat": 52.0, "lon": 9.0 }, null, { "lat": 52.001, "lon": 9.002 } ],
+      "tags": { "highway": "primary", "oneway": "yes", "lanes": "2", "turn:lanes": "left|through", "bogus": 5 }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@graphmasters/osm-lanes",
+  "version": "0.1.0",
+  "description": "Interpret OpenStreetMap lane tags (lanes, turn:lanes, access:lanes, destination:lanes, …) of a way and render them as SVG.",
+  "keywords": ["openstreetmap", "osm", "lanes", "turn:lanes", "destination:lanes", "overpass", "svg", "road", "traffic"],
+  "license": "Apache-2.0",
+  "author": "Graphmasters",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Graphmasters/osm-lanes.git"
+  },
+  "homepage": "https://graphmasters.github.io/osm-lanes/",
+  "bugs": "https://github.com/Graphmasters/osm-lanes/issues",
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist", "NOTICE", "ATTRIBUTION.md"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:app": "vite build && node scripts/spa-fallback.mjs",
+    "dev": "vite",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "assets": "node scripts/build-assets.mjs",
+    "fetch-stvo": "node scripts/fetch-stvo.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@waysidemapping/pinhead": "~16.26.0",
+    "maplibre-gl": "~5.24.0",
+    "tsup": "~8.5.1",
+    "typescript": "~5.9.3",
+    "vite": "~7.3.7",
+    "vitest": "~3.2.7"
+  }
+}

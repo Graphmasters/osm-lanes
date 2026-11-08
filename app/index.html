@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>osm-lanes</title>
+    <meta name="description" content="Click a road on the map to see its OpenStreetMap lane tagging as a lane diagram and destination sign." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234b5057'/%3E%3Cpath d='M11 4v24M21 4v24' stroke='%23fff' stroke-width='2' stroke-dasharray='4 3'/%3E%3Cpath d='M16 26V12m-4 4 4-6 4 6' stroke='%23fff' stroke-width='2.5' fill='none'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="map" aria-label="Map"></div>
+
+    <section id="intro" class="card">
+      <h1>osm-lanes</h1>
+      <p id="hint">Zoom in and click a road to see its lanes.</p>
+      <details>
+        <summary>About</summary>
+        <p>
+          Shows the lane tagging of an <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
+          way (<a href="https://wiki.openstreetmap.org/wiki/Lanes" target="_blank" rel="noopener noreferrer">lanes, turn:lanes, destination:lanes, …</a>)
+          as a lane diagram and a destination sign.
+        </p>
+        <p>
+          Inspired by <a href="https://github.com/mueschel/OsmLaneVisualizer" target="_blank" rel="noopener noreferrer">OsmLaneVisualizer</a>;
+          an independent implementation. The code was generated with Claude (Anthropic).
+        </p>
+        <p><a href="https://github.com/Graphmasters/osm-lanes" target="_blank" rel="noopener noreferrer">Source code on GitHub</a> (Apache-2.0)</p>
+      </details>
+    </section>
+
+    <aside id="panel" class="card" hidden aria-live="polite"></aside>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

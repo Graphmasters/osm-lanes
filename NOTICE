@@ -1,0 +1,14 @@
+osm-lanes
+Copyright 2026 Graphmasters GmbH
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes third-party material that is NOT covered by the Apache
+License but by its own terms:
+
+  * Icons from Pinhead (https://github.com/waysidemapping/pinhead),
+    dedicated to the public domain under CC0 1.0.
+  * Images of German road signs (StVO) from Wikimedia Commons, which are
+    official works in the public domain under German law (§ 5 UrhG).
+
+See ATTRIBUTION.md for the full list of sources.

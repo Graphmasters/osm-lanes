@@ -1,0 +1,30 @@
+name: Publish to npm
+
+# Publishes @graphmasters/osm-lanes when a GitHub Release is published, using npm Trusted
+# Publishing (OIDC) — no long-lived NPM_TOKEN needed. Not used until the package is released.
+#
+# One-time setup on npmjs.com (Package → Settings → Trusted Publisher):
+#   Publisher = GitHub Actions, Organization = Graphmasters, Repository = osm-lanes,
+#   Workflow filename = publish.yml
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm publish --access public
