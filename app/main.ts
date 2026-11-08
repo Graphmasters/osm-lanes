@@ -72,5 +72,5 @@ window.addEventListener('popstate', () => {
   render(true)
 })
 
-// Deep link (/way/<id>): load the way and fit the map to it.
+// Deep link (?way=<id>): load the way and fit the map to it.
 render(true)

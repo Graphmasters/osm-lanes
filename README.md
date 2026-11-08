@@ -7,7 +7,7 @@ and render it as SVG: a **lane diagram** and, where `destination:lanes` is tagge
 
 **Demo:** <https://graphmasters.github.io/osm-lanes/> — zoom in, click a road, and the way's lanes
 appear in the side panel. Every way has its own URL, e.g.
-`https://graphmasters.github.io/osm-lanes/way/26580967`.
+`https://graphmasters.github.io/osm-lanes/?way=26580967`.
 
 > [!NOTE]
 > The code in this repository was generated with [Claude](https://www.anthropic.com/claude)
@@ -145,7 +145,7 @@ npm test            # vitest
 npm run typecheck
 npm run build       # library → dist/
 npm run dev         # demo app (Vite) at http://localhost:5173/osm-lanes/
-npm run build:app   # demo → _site/ (with 404.html fallback for /way/<id> deep links)
+npm run build:app   # demo → _site/
 ```
 
 Third-party graphics are regenerated with `npm run fetch-stvo` (downloads the public-domain sign

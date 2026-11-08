@@ -28,7 +28,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      # Builds the demo into _site/ (incl. 404.html so /osm-lanes/way/<id> deep links work).
+      # Builds the demo into _site/. Deep links use ?way=<id>, so no 404 fallback is needed.
       # Set the repository variable OVERPASS_ENDPOINT to use another Overpass instance.
       - run: npm run build:app
         env:
