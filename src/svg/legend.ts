@@ -12,6 +12,20 @@ export interface LegendOptions {
   labels?: Partial<Record<string, string>>
 }
 
+/** Text glyph per turn value, matching the direction of the arrow in the lane graphic. */
+export const TURN_GLYPHS: Readonly<Record<string, string>> = {
+  through: '↑',
+  left: '←',
+  slight_left: '↖',
+  sharp_left: '↙',
+  right: '→',
+  slight_right: '↗',
+  sharp_right: '↘',
+  reverse: '↶',
+  merge_to_left: '⇖',
+  merge_to_right: '⇗',
+}
+
 /** Explains the symbols that occur in the lane graphic of this road. */
 export function getLanesLegend(road: RoadLanes, options: LegendOptions = {}): LegendEntry[] {
   const { locale = 'en', labels } = options
@@ -27,7 +41,7 @@ export function getLanesLegend(road: RoadLanes, options: LegendOptions = {}): Le
 
   for (const lane of lanes) {
     for (const t of lane.turn) {
-      if (KNOWN_ARROWS.has(t)) add(`turn.${t}`, `↑ ${L(`turn.${t}` as LabelKey)}`)
+      if (KNOWN_ARROWS.has(t)) add(`turn.${t}`, `${TURN_GLYPHS[t] ?? '↑'} ${L(`turn.${t}` as LabelKey)}`)
       else add('turn.unknown', `? ${L('turn.unknown')}`)
     }
   }
