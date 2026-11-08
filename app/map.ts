@@ -1,9 +1,11 @@
 // MapLibre map with the OpenFreeMap "liberty" style. Road features of the `transportation`
 // source layer are hoverable/clickable; their tile feature ID encodes the OSM way ID.
+// Features that planetiler merged from several ways (ID suffix 0) are not selectable: their ID
+// names only the first merged way, which is often not the segment under the pointer.
 
 import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { LatLon, OsmWay } from '../src/index'
+import { decodeTileFeatureId, type LatLon, type OsmWay } from '../src/index'
 
 export const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
 /** Below this zoom most tile features are merged from several ways, so selection is disabled. */
@@ -33,6 +35,12 @@ const SELECTABLE_CLASSES = new Set([
   'track_construction',
   'path_construction',
 ])
+
+/** True when a tile feature ID encodes exactly one OSM way (not a merged feature). */
+function isSingleWay(id: MapGeoJSONFeature['id']): boolean {
+  const d = decodeTileFeatureId(id)
+  return d.kind === 'element' && d.type === 'way'
+}
 
 const HOVER_LAYER = 'osml-hover'
 const SELECTED_SOURCE = 'osml-selected'
@@ -108,7 +116,7 @@ export function createMap(
     ]
     return map
       .queryRenderedFeatures(box, { layers: roadLayers })
-      .find((f) => f.id !== undefined && SELECTABLE_CLASSES.has(String(f.properties['class'])))
+      .find((f) => SELECTABLE_CLASSES.has(String(f.properties['class'])) && isSingleWay(f.id))
   }
 
   let hoverId: number | string | undefined

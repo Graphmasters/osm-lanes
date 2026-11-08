@@ -65,19 +65,19 @@ export class Panel {
     this.root.hidden = false
   }
 
-  loading(id: string, notice?: string) {
-    this.show(this.header(`Way ${id}`, id), notice ? h('p', { class: 'notice' }, notice) : null, h('p', { class: 'status' }, 'Loading way from Overpass API…'), this.footer())
+  loading(id: string) {
+    this.show(this.header(`Way ${id}`, id), h('p', { class: 'status' }, 'Loading way…'), this.footer())
   }
 
-  error(id: string, err: unknown, notice?: string) {
+  error(id: string, err: unknown) {
     let msg = 'Could not load this way.'
     let retry = false
     if (err instanceof OsmNotFoundError) msg = `Way ${id} does not exist (or was deleted).`
     else if (err instanceof OsmRateLimitedError) {
-      msg = 'The Overpass API is busy right now. Please try again in a moment.'
+      msg = 'The OSM data servers are busy right now. Please try again in a moment.'
       retry = true
     } else if (err instanceof OsmTimeoutError) {
-      msg = 'The Overpass API did not answer in time (it may be busy). Please try again in a moment.'
+      msg = 'The OSM data servers did not answer in time (they may be busy). Please try again in a moment.'
       retry = true
     } else if (err instanceof Error) {
       msg = `Could not load this way: ${err.message}`
@@ -85,10 +85,10 @@ export class Panel {
     }
     const btn = retry ? h('button', { type: 'button', class: 'retry' }, 'Retry') : null
     btn?.addEventListener('click', () => this.cb.onRetry())
-    this.show(this.header(`Way ${id}`, id), notice ? h('p', { class: 'notice' }, notice) : null, h('p', { class: 'status error' }, msg), btn, this.footer())
+    this.show(this.header(`Way ${id}`, id), h('p', { class: 'status error' }, msg), btn, this.footer())
   }
 
-  way(way: OsmWay, notice?: string) {
+  way(way: OsmWay) {
     const t = way.tags
     const road = interpretLanes(t)
     const title = t['name'] || t['ref'] || `Way ${way.id}`
@@ -124,7 +124,6 @@ export class Panel {
 
     this.show(
       this.header(title, way.id, subtitle),
-      notice ? h('p', { class: 'notice' }, notice) : null,
       lanes ? graphics : h('p', { class: 'status' }, 'This way has no lane tags. ', ext('https://wiki.openstreetmap.org/wiki/Lanes', 'How to tag lanes')),
       legend.length ? h('ul', { class: 'legend' }, ...legend.map((e) => h('li', {}, e.label))) : null,
       warnings,
@@ -143,6 +142,21 @@ export class Panel {
   }
 
   private footer(way?: OsmWay) {
+    const via =
+      way?.source === 'overpass'
+        ? [
+            ext('https://overpass-api.de/', 'Overpass API'),
+            ' (',
+            ext('https://www.fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/', 'FOSSGIS'),
+            ')',
+            way.dataTimestamp ? `, data as of ${fmtTime(way.dataTimestamp)}` : '',
+          ]
+        : way?.source === 'osm-api'
+          ? [
+              ext('https://wiki.openstreetmap.org/wiki/API_v0.6', 'OSM API'),
+              way.timestamp ? `, last edited ${fmtTime(way.timestamp)}${way.version ? ` (version ${way.version})` : ''}` : '',
+            ]
+          : null
     return h(
       'footer',
       {},
@@ -152,14 +166,12 @@ export class Panel {
         { class: 'credit' },
         'Way data: ',
         ext('https://www.openstreetmap.org/copyright', '© OpenStreetMap contributors'),
-        ' (ODbL), via ',
-        ext('https://overpass-api.de/', 'Overpass API'),
-        ' (',
-        ext('https://www.fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/', 'FOSSGIS'),
-        ')',
-        way?.dataTimestamp ? `, data as of ${way.dataTimestamp.replace('T', ' ').replace('Z', ' UTC')}` : '',
+        ' (ODbL)',
+        ...(via ? [', via ', ...via] : []),
         '.',
       ),
     )
   }
 }
+
+const fmtTime = (iso: string) => iso.replace('T', ' ').replace('Z', ' UTC')

@@ -20,7 +20,8 @@ appear in the side panel. Every way has its own URL, e.g.
     explained warnings for inconsistent or unknown tagging.
   - `renderLanesSvg()` / `renderDestinationSignSvg()`: SVG strings (or DOM elements) with turn
     arrows, lane lines, access icons and German road signs (StVO).
-  - `fetchWay(id)`: one way with tags and geometry from an Overpass API instance.
+  - `fetchWayFromOsmApi(id)` / `fetchWay(id)`: one way with tags and geometry from the OSM API v0.6
+    or from an Overpass API instance.
   - `decodeTileFeatureId()`: OSM way IDs from vector-tile feature IDs (OpenFreeMap/planetiler
     encoding).
 - **Demo app** (GitHub Pages): a MapLibre map with the OpenFreeMap "Liberty" style. Click a road to
@@ -33,7 +34,7 @@ npm install @graphmasters/osm-lanes   # not yet published; use a pinned git depe
 ```
 
 ```ts
-import { fetchWay, interpretLanes, renderLanesSvg, renderDestinationSignSvg } from '@graphmasters/osm-lanes'
+import { fetchWayFromOsmApi, interpretLanes, renderLanesSvg, renderDestinationSignSvg } from '@graphmasters/osm-lanes'
 
 // From tags you already have …
 const svg = renderLanesSvg({
@@ -44,8 +45,9 @@ const svg = renderLanesSvg({
   'bus:lanes': '||designated',
 })
 
-// … or fetch a way from Overpass (please set your own endpoint, see "Data sources").
-const way = await fetchWay(26580967, { endpoint: 'https://overpass-api.de/api/interpreter' })
+// … or fetch a way (see "Data sources" for the usage policies).
+const way = await fetchWayFromOsmApi(26580967)
+// or from Overpass: await fetchWay(26580967, { endpoint: 'https://overpass-api.de/api/interpreter' })
 const road = interpretLanes(way.tags)
 console.log(road.forward.map((lane) => lane.turn), road.warnings)
 document.body.insertAdjacentHTML('beforeend', renderDestinationSignSvg(road) + renderLanesSvg(road))
@@ -59,7 +61,8 @@ document.body.insertAdjacentHTML('beforeend', renderDestinationSignSvg(road) + r
 | `renderDestinationSignSvg(input, options?)` | SVG string, or `''` without `destination:lanes`. Uses the same column layout as the lane diagram. |
 | `renderDestinationSignElement(input, options?)` | `SVGSVGElement \| null` (browser). |
 | `getLanesLegend(road, { locale })` | Legend entries for the symbols in a diagram (`en`, `de`). |
-| `fetchWay(id, options?)` | `Promise<OsmWay>` (tags, geometry, bounds, data timestamp). Throws `OsmNotFoundError`, `OsmRateLimitedError`, `OsmTimeoutError`, … |
+| `fetchWayFromOsmApi(id, options?)` | `Promise<OsmWay>` from `/api/0.6/way/{id}/full.json` (tags, geometry, bounds, last edit, version). Option `baseUrl`. |
+| `fetchWay(id, options?)` | `Promise<OsmWay>` from Overpass (tags, geometry, bounds, data timestamp). Option `endpoint`. Both fetchers throw `OsmNotFoundError`, `OsmRateLimitedError`, `OsmTimeoutError`, … |
 | `decodeTileFeatureId(id)` | `{ kind: 'element', type, id }`, `{ kind: 'merged', hintWayId }` or `{ kind: 'invalid' }`. |
 | `SUPPORTED_TAGS`, `wikiUrlForKey(key)` | Supported keys and their OSM wiki pages. |
 
@@ -113,25 +116,33 @@ the count-style `lanes:psv` / `lanes:bus`.
 
 OpenFreeMap's vector tiles (built with planetiler, OpenMapTiles schema) encode the source OSM
 element in each feature ID as `osmId × 10 + type` (1 = node, 2 = way, 3 = relation). The demo reads
-that ID from the clicked road feature and fetches the way from Overpass. Two caveats:
+that ID from the clicked road feature and fetches that way. Planetiler **merges** adjacent road
+segments with identical map attributes into one feature (type digit `0`); such a feature keeps only
+the ID of the first merged way, which is often not the segment under the pointer. The demo
+therefore only lets you select features that stand for exactly one way:
 
-- Below zoom 14, most road features are **merged** from several ways, so selection is only enabled
-  from zoom 14.
-- Even at zoom 14, planetiler merges some features (type digit `0`). The remaining ID is the first
-  merged way, which may not be the clicked segment. The demo then shows a notice and highlights the
-  way it actually loaded.
+- Below zoom 14 almost every road feature is merged, so selection starts at zoom 14 (the tiles'
+  maximum zoom; higher zoom levels only enlarge them).
+- At zoom 14 and above, merged features (roughly a quarter of the roads) are not clickable.
 
 ## Data sources and usage policies
 
+- **OSM API v0.6.** `fetchWayFromOsmApi` defaults to `https://api.openstreetmap.org`, operated by the
+  OpenStreetMap Foundation under its [API usage policy](https://operations.osmfoundation.org/policies/api/).
+  It is primarily the editing API: use it only for occasional, user-triggered lookups (no bulk or
+  automated reading), send a valid `Referer` (browsers do) or an identifying `User-Agent` (outside
+  browsers), and show the OSM attribution.
 - **Overpass API.** `fetchWay` defaults to `https://overpass-api.de/api/interpreter`, operated by
   FOSSGIS e.V. under their
   [terms of use](https://www.fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/). In short:
   low request volumes only (no bulk downloads), visible OSM attribution, a contact address, and a
-  configurable endpoint. The demo requests a way only on an explicit click or deep link, caches
-  results per session, keeps at most one request in flight and backs off when the server is busy.
-  If you build on this library, **please pass your own `endpoint`**; outside browsers, also send a
-  `User-Agent` that identifies your application. The demo's endpoint can be changed at build time
-  with `VITE_OVERPASS_ENDPOINT`.
+  configurable endpoint. If you build on this library, **please pass your own `endpoint`**; outside
+  browsers, also send a `User-Agent` that identifies your application.
+- **The demo** loads a way from the OSM API first, because a busy public Overpass instance can take
+  30 s or more to answer, and falls back to Overpass when the API is busy or unreachable. It
+  requests a way only on an explicit click or deep link, caches results per session, keeps at most
+  one request in flight and backs off when a server is busy. Both endpoints can be changed at build
+  time with `VITE_OSM_API_BASE_URL` and `VITE_OVERPASS_ENDPOINT`.
 - **Tiles.** [OpenFreeMap](https://openfreemap.org/), style
   `https://tiles.openfreemap.org/styles/liberty`.
 - **Data.** © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL. Found an

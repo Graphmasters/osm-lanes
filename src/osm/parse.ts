@@ -63,7 +63,7 @@ export function parseOverpassJson(json: unknown, wayId: string | number): OsmWay
   const el = pick(json.elements as RawElement[], 'way', id)
   if (!el || el.visible === false) throw new OsmNotFoundError('way', id)
 
-  const way: OsmWay = { type: 'way', id, tags: parseTags(el.tags) }
+  const way: OsmWay = { type: 'way', id, tags: parseTags(el.tags), source: 'overpass' }
   const geometry = parseGeometry(el.geometry)
   if (geometry) way.geometry = geometry
   const bounds = parseBounds(el.bounds)
@@ -72,5 +72,50 @@ export function parseOverpassJson(json: unknown, wayId: string | number): OsmWay
   if (isObject(osm3s) && typeof osm3s.timestamp_osm_base === 'string') {
     way.dataTimestamp = osm3s.timestamp_osm_base
   }
+  return way
+}
+
+/**
+ * Parses the OSM API v0.6 answer for `/api/0.6/way/{id}/full.json` (the way plus all its nodes)
+ * and extracts one way. The geometry is rebuilt from the referenced nodes in way order.
+ *
+ * @throws OsmNotFoundError when the way is absent or deleted (`visible: false`)
+ * @throws OsmParseError when the document is not OSM JSON
+ */
+export function parseOsmApiJson(json: unknown, wayId: string | number): OsmWay {
+  const id = String(wayId)
+  if (!isObject(json) || !Array.isArray(json.elements)) {
+    throw new OsmParseError('Response is not an OSM JSON document')
+  }
+  const elements = json.elements as (RawElement & Record<string, unknown>)[]
+  const el = pick(elements, 'way', id) as (RawElement & Record<string, unknown>) | undefined
+  if (!el || el.visible === false) throw new OsmNotFoundError('way', id)
+
+  const nodes = new Map<string, LatLon>()
+  for (const e of elements) {
+    if (e.type === 'node' && typeof e.lat === 'number' && typeof e.lon === 'number') {
+      nodes.set(String(e.id), { lat: e.lat, lon: e.lon })
+    }
+  }
+  const geometry: LatLon[] = []
+  if (Array.isArray(el.nodes)) {
+    for (const ref of el.nodes) {
+      const p = nodes.get(String(ref))
+      if (p) geometry.push(p)
+    }
+  }
+
+  const way: OsmWay = { type: 'way', id, tags: parseTags(el.tags), source: 'osm-api' }
+  if (geometry.length) {
+    way.geometry = geometry
+    way.bounds = {
+      minlat: Math.min(...geometry.map((p) => p.lat)),
+      minlon: Math.min(...geometry.map((p) => p.lon)),
+      maxlat: Math.max(...geometry.map((p) => p.lat)),
+      maxlon: Math.max(...geometry.map((p) => p.lon)),
+    }
+  }
+  if (typeof el.timestamp === 'string') way.timestamp = el.timestamp
+  if (typeof el.version === 'number') way.version = el.version
   return way
 }

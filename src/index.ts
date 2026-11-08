@@ -1,8 +1,17 @@
 // osm-lanes — interpret OpenStreetMap lane tags and render them as SVG.
 
 // data access
-export { fetchWay, overpassWayQuery, DEFAULT_OVERPASS_ENDPOINT, type FetchWayOptions } from './osm/fetch'
-export { parseOverpassJson } from './osm/parse'
+export {
+  fetchWay,
+  fetchWayFromOsmApi,
+  overpassWayQuery,
+  osmApiWayUrl,
+  DEFAULT_OVERPASS_ENDPOINT,
+  DEFAULT_OSM_API_BASE_URL,
+  type FetchWayOptions,
+  type FetchWayFromOsmApiOptions,
+} from './osm/fetch'
+export { parseOverpassJson, parseOsmApiJson } from './osm/parse'
 export { decodeTileFeatureId, type DecodedFeatureId } from './osm/tile-id'
 export {
   OsmError,
@@ -12,7 +21,7 @@ export {
   OsmParseError,
   OsmTimeoutError,
 } from './osm/errors'
-export type { OsmWay, OsmElementType, LatLon } from './osm/types'
+export type { OsmWay, OsmWaySource, OsmElementType, LatLon } from './osm/types'
 
 // interpretation
 export { interpretLanes, type Tags } from './lanes/interpret'

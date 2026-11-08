@@ -29,9 +29,10 @@ jobs:
       - run: npm ci
       - run: npm test
       # Builds the demo into _site/. Deep links use ?way=<id>, so no 404 fallback is needed.
-      # Set the repository variable OVERPASS_ENDPOINT to use another Overpass instance.
+      # Repository variables OSM_API_BASE_URL / OVERPASS_ENDPOINT override the data endpoints.
       - run: npm run build:app
         env:
+          VITE_OSM_API_BASE_URL: ${{ vars.OSM_API_BASE_URL }}
           VITE_OVERPASS_ENDPOINT: ${{ vars.OVERPASS_ENDPOINT }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
