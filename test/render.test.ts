@@ -195,6 +195,23 @@ describe('legend', () => {
     const road = interpretLanes({ oneway: 'yes', lanes: '2', 'turn:lanes': 'left|through', 'bus:lanes': '|designated' })
     expect(getLanesLegend(road).map((e) => e.id)).toEqual(['turn.left', 'turn.through', 'designated.bus'])
   })
+  it('uses a glyph that matches each turn direction', () => {
+    const road = interpretLanes({
+      oneway: 'yes',
+      lanes: '5',
+      'turn:lanes': 'reverse;left|slight_left|through|slight_right;right|sharp_right;merge_to_left',
+    })
+    expect(getLanesLegend(road).map((e) => e.label)).toEqual([
+      '↶ U-turn',
+      '← left',
+      '↖ slight left',
+      '↑ straight ahead',
+      '↗ slight right',
+      '→ right',
+      '↘ sharp right',
+      '⇖ merge to the left',
+    ])
+  })
 })
 
 it('esc covers all XML specials', () => {
