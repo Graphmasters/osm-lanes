@@ -142,12 +142,6 @@ a {
   color: #5d646d;
 }
 
-#panel .legend {
-  margin: 10px 0;
-  padding-left: 18px;
-  color: var(--muted);
-}
-
 #panel details {
   margin: 10px 0;
 }
