@@ -24,7 +24,8 @@ appear in the side panel. Every way has its own URL, e.g.
     or from an Overpass API instance.
   - `decodeTileFeatureId()`: OSM way IDs from vector-tile feature IDs (OpenFreeMap/planetiler
     encoding).
-- **Demo app** (GitHub Pages): a MapLibre map with the OpenFreeMap "Liberty" style. Click a road to
+- **Demo app** (GitHub Pages): a MapLibre map with the Graphmasters
+  [basemap.world](https://graphmasters.github.io/basemap-world-openfreemap/) style on OpenFreeMap tiles. Click a road to
   see its lane diagram, destination sign, notes and raw tags (each tag linked to its OSM wiki page).
 
 ## Library usage
@@ -154,8 +155,12 @@ therefore only lets you select features that stand for exactly one way:
   requests a way only on an explicit click or deep link, caches results per session, keeps at most
   one request in flight and backs off when a server is busy. Both endpoints can be changed at build
   time with `VITE_OSM_API_BASE_URL` and `VITE_OVERPASS_ENDPOINT`.
-- **Tiles.** [OpenFreeMap](https://openfreemap.org/), style
-  `https://tiles.openfreemap.org/styles/liberty`.
+- **Tiles and map style.** Vector tiles from [OpenFreeMap](https://openfreemap.org/) (OpenMapTiles
+  schema), styled with the Graphmasters
+  [basemap.world](https://graphmasters.github.io/basemap-world-openfreemap/) style
+  (`https://graphmasters.github.io/basemap-world-openfreemap/style.json`), an adaptation of the
+  basemap.de design (© GeoBasis-DE / BKG, CC BY 4.0). Its credits appear in the map's attribution
+  control.
 - **Data.** © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL. Found an
   error in the map? [Report or fix it](https://www.openstreetmap.org/fixthemap).
 

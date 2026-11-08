@@ -66,9 +66,14 @@ The demo application in `app/` does not bundle any map data. At runtime it uses:
 
 - **Map data** © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available
   under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).
-- **Vector tiles and the "Liberty" map style** from [OpenFreeMap](https://openfreemap.org/), using the
-  [OpenMapTiles](https://www.openmaptiles.org/) schema (© OpenMapTiles). The credits are shown in the
-  map's attribution control.
+- **Vector tiles** from [OpenFreeMap](https://openfreemap.org/), using the
+  [OpenMapTiles](https://www.openmaptiles.org/) schema (© OpenMapTiles).
+- **Map style** [basemap.world (OpenFreeMap adaptation)](https://graphmasters.github.io/basemap-world-openfreemap/)
+  by Graphmasters, based on the basemap.de design © GeoBasis-DE /
+  [BKG](https://www.bkg.bund.de) (2026), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
+  [modified by Graphmasters](https://graphmasters.github.io/basemap-world-openfreemap/attribution.html).
+  Fonts and sprites are loaded at runtime from the BKG (sgx.geodatenzentrum.de). These credits are
+  shown in the map's attribution control; nothing from the style is bundled in this repository.
 - **Way data** from the [OpenStreetMap API](https://wiki.openstreetmap.org/wiki/API_v0.6) operated by
   the [OpenStreetMap Foundation](https://osmfoundation.org/), used under its
   [API usage policy](https://operations.osmfoundation.org/policies/api/), and, as a fallback, from
