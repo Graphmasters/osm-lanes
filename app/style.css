@@ -137,6 +137,17 @@ a {
   height: auto;
 }
 
+#panel .lanes-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#panel .lanes-row .osml-compass {
+  flex: none;
+}
+
 #panel figcaption {
   font-size: 11px;
   color: #5d646d;

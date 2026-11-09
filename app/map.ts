@@ -44,6 +44,34 @@ function isSingleWay(id: MapGeoJSONFeature['id']): boolean {
 
 const HOVER_LAYER = 'osml-hover'
 const SELECTED_SOURCE = 'osml-selected'
+const DIRECTION_ICON = 'osml-direction'
+
+/**
+ * A chevron pointing right (+x), drawn on a canvas so no sprite or glyph from the style is
+ * needed. Symbols placed along a line turn their +x axis into the line direction, so the
+ * chevrons point in the way's drawing direction.
+ */
+function directionIcon(): ImageData {
+  const px = 48
+  const ctx = document.createElement('canvas').getContext('2d')!
+  ctx.canvas.width = ctx.canvas.height = px
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  const chevron = () => {
+    ctx.beginPath()
+    ctx.moveTo(px * 0.32, px * 0.18)
+    ctx.lineTo(px * 0.68, px * 0.5)
+    ctx.lineTo(px * 0.32, px * 0.82)
+    ctx.stroke()
+  }
+  ctx.strokeStyle = '#7a2e05'
+  ctx.lineWidth = px * 0.26
+  chevron()
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = px * 0.14
+  chevron()
+  return ctx.getImageData(0, 0, px, px)
+}
 
 export interface RoadMap {
   map: maplibregl.Map
@@ -105,6 +133,22 @@ export function createMap(
       source: SELECTED_SOURCE,
       paint: { 'line-color': '#e8590c', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 12] },
       layout: { 'line-cap': 'round', 'line-join': 'round' },
+    })
+    // Chevrons along the highlight show the way's drawing direction (the lane graphic's "up").
+    if (!map.hasImage(DIRECTION_ICON)) map.addImage(DIRECTION_ICON, directionIcon(), { pixelRatio: 2 })
+    map.addLayer({
+      id: `${SELECTED_SOURCE}-direction`,
+      type: 'symbol',
+      source: SELECTED_SOURCE,
+      layout: {
+        'symbol-placement': 'line',
+        'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 14, 70, 18, 140],
+        'icon-image': DIRECTION_ICON,
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 14, 0.7, 18, 1.3],
+        'icon-rotation-alignment': 'map',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+      },
     })
     onZoomHint(map.getZoom() < MIN_SELECT_ZOOM)
   })

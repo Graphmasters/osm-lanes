@@ -21,6 +21,7 @@ export {
   OsmParseError,
   OsmTimeoutError,
 } from './osm/errors'
+export { wayBearing } from './osm/bearing'
 export type { OsmWay, OsmWaySource, OsmElementType, LatLon } from './osm/types'
 
 // interpretation
@@ -55,6 +56,7 @@ export {
   renderDestinationSignElement,
   type DestinationSignOptions,
 } from './svg/destination'
+export { renderCompassSvg, renderCompassElement, compassPoint, type CompassOptions } from './svg/compass'
 export { getLanesLegend, type LegendEntry, type LegendOptions } from './svg/legend'
 export { LABELS, type Locale } from './svg/labels'
 export type { LanesInput, LayoutOptions } from './svg/layout'
