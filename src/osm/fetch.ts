@@ -13,13 +13,13 @@
 // and no bulk or read-only mass use. Use it for occasional, user-triggered lookups only.
 
 import { OsmHttpError, OsmNotFoundError, OsmParseError, OsmRateLimitedError, OsmTimeoutError } from './errors'
-import { parseOsmApiJson, parseOverpassJson } from './parse'
-import type { OsmWay } from './types'
+import { parseOsmApiJson, parseOsmApiWays, parseOverpassJson } from './parse'
+import type { BBox, OsmWay } from './types'
 
 export const DEFAULT_OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter'
 export const DEFAULT_OSM_API_BASE_URL = 'https://api.openstreetmap.org'
 
-/** Upper bound for a single-way response; a way has at most 2000 nodes. */
+/** Upper bound for a response (a single way, or a small `/map` box). */
 const MAX_BODY_BYTES = 4 * 1024 * 1024
 /** 509 = OSM API bandwidth limit exceeded. */
 const RETRY_STATUS = new Set([429, 502, 503, 504, 509])
@@ -99,7 +99,8 @@ async function readCapped(res: Response): Promise<string> {
 async function requestJson(
   url: string,
   init: RequestInit,
-  wayId: string,
+  /** Way ID for OsmNotFoundError on 404/410; without it those statuses are OsmHttpErrors. */
+  wayId: string | undefined,
   options: CommonOptions & { timeoutMs: number },
 ): Promise<unknown> {
   const {
@@ -143,7 +144,7 @@ async function requestJson(
       await sleep(backoffMs * 2 ** attempt, signal)
       continue
     }
-    if (res.status === 404 || res.status === 410) throw new OsmNotFoundError('way', wayId)
+    if (wayId && (res.status === 404 || res.status === 410)) throw new OsmNotFoundError('way', wayId)
     const text = (await res.text().catch(() => '')).slice(0, 512)
     throw new OsmHttpError(res.status, text)
   }
@@ -198,4 +199,58 @@ export async function fetchWayFromOsmApi(
     { ...options, timeoutMs },
   )
   return parseOsmApiJson(json, wayId)
+}
+
+export interface FetchWaysInBboxOptions extends CommonOptions {
+  /** OSM API base URL without `/api/0.6`. Defaults to DEFAULT_OSM_API_BASE_URL. */
+  baseUrl?: string
+  /** Per-attempt timeout in milliseconds (default 15 000). */
+  timeoutMs?: number
+}
+
+/**
+ * Largest box fetchWaysInBbox accepts, in square degrees (about 390 m × 390 m at 52° N).
+ * The OSM API itself allows 0.25 deg², but `/map` returns *everything* in the box, so
+ * keep the boxes small.
+ */
+export const MAX_BBOX_AREA = 0.00002
+
+/** Builds the OSM API v0.6 URL for all data in a bounding box. */
+export function osmApiMapUrl(bbox: BBox, baseUrl = DEFAULT_OSM_API_BASE_URL): string {
+  const f = (n: number) => String(Math.round(n * 1e7) / 1e7)
+  return `${baseUrl.replace(/\/+$/, '')}/api/0.6/map.json?bbox=${f(bbox.minlon)},${f(bbox.minlat)},${f(bbox.maxlon)},${f(bbox.maxlat)}`
+}
+
+/**
+ * Fetches all ways in a small bounding box from the OSM API v0.6 (`/api/0.6/map`), with tags and
+ * full geometry. The API returns the ways that have **at least one node inside the box** — a way
+ * that only crosses the box between two of its nodes is not included.
+ *
+ * Subject to the OSMF API usage policy: only for occasional, user-triggered lookups.
+ *
+ * @throws RangeError for an invalid box or one larger than MAX_BBOX_AREA
+ * @throws the same errors as fetchWay (except OsmNotFoundError)
+ */
+export async function fetchWaysInBbox(bbox: BBox, options: FetchWaysInBboxOptions = {}): Promise<OsmWay[]> {
+  const { minlat, minlon, maxlat, maxlon } = bbox
+  if (
+    ![minlat, minlon, maxlat, maxlon].every(Number.isFinite) ||
+    minlat >= maxlat ||
+    minlon >= maxlon ||
+    minlat < -90 ||
+    maxlat > 90 ||
+    minlon < -180 ||
+    maxlon > 180
+  ) {
+    throw new RangeError('Invalid bounding box')
+  }
+  if ((maxlat - minlat) * (maxlon - minlon) > MAX_BBOX_AREA) throw new RangeError('Bounding box too large')
+  const { baseUrl = DEFAULT_OSM_API_BASE_URL, timeoutMs = 15_000, headers = {} } = options
+  const json = await requestJson(
+    osmApiMapUrl(bbox, baseUrl),
+    { method: 'GET', headers: { Accept: 'application/json', ...headers } },
+    undefined,
+    { ...options, timeoutMs },
+  )
+  return parseOsmApiWays(json)
 }

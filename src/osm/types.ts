@@ -12,7 +12,7 @@ export interface OsmWay {
   tags: Record<string, string>
   /** Node coordinates in way order, when the source returned geometry. */
   geometry?: LatLon[]
-  bounds?: { minlat: number; minlon: number; maxlat: number; maxlon: number }
+  bounds?: BBox
   /** Timestamp of the OSM data the answer is based on (Overpass `osm3s.timestamp_osm_base`). */
   dataTimestamp?: string
   /** Time of the way's last edit (OSM API only; Overpass `out tags geom` has no metadata). */
@@ -24,3 +24,10 @@ export interface OsmWay {
 }
 
 export type OsmWaySource = 'overpass' | 'osm-api'
+
+export interface BBox {
+  minlat: number
+  minlon: number
+  maxlat: number
+  maxlon: number
+}

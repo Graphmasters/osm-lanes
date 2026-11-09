@@ -38,6 +38,16 @@ const locale: Locale = navigator.language?.toLowerCase().startsWith('de') ? 'de'
 export interface PanelCallbacks {
   onClose(): void
   onRetry(): void
+  /** A way was picked from the list of streets at a clicked point. */
+  onPick(id: string): void
+}
+
+/** The streets found at a clicked point of a merged map feature, offered as a list. */
+export interface WayChoices {
+  /** Nearest first. */
+  streets: { way: OsmWay; distanceM: number }[]
+  /** The way ID the tile feature carries (the first merged way); listed if not found nearby. */
+  hintWayId?: string
 }
 
 export class Panel {
@@ -59,18 +69,79 @@ export class Panel {
     this.root.replaceChildren()
   }
 
-  private show(...children: Child[]) {
+  /** Shown under the header of every way view until cleared (set to null). */
+  choices: WayChoices | null = null
+  private currentId: string | null = null
+
+  private show(header: Node, ...children: Child[]) {
     const close = h('button', { class: 'close', type: 'button', 'aria-label': 'Close' }, '×')
     close.addEventListener('click', () => this.cb.onClose())
-    this.root.replaceChildren(close, ...children.filter((c): c is Node | string => !!c))
+    const list = this.choices ? this.choiceList(this.choices) : null
+    this.root.replaceChildren(close, header, ...[list, ...children].filter((c): c is Node | string => !!c))
     this.root.hidden = false
   }
 
+  searching() {
+    this.currentId = null
+    this.show(this.plainHeader('Streets at this point'), h('p', { class: 'status' }, 'Looking up the OSM ways at this point…'), this.footer())
+  }
+
+  noStreets() {
+    this.currentId = null
+    this.show(
+      this.plainHeader('Streets at this point'),
+      h('p', { class: 'status' }, 'No street found at this point in the OSM data.'),
+      this.footer(),
+    )
+  }
+
+  searchError(err: unknown) {
+    this.currentId = null
+    const busy = err instanceof OsmRateLimitedError || err instanceof OsmTimeoutError
+    const msg = busy
+      ? 'The OSM API is busy right now. Click the road again in a moment.'
+      : `Could not look up the ways at this point${err instanceof Error ? `: ${err.message}` : '.'} Click the road again to retry.`
+    this.show(this.plainHeader('Streets at this point'), h('p', { class: 'status error' }, msg), this.footer())
+  }
+
+  private choiceList(c: WayChoices) {
+    const item = (id: string, name: string, meta: string) => {
+      const current = id === this.currentId
+      const btn = h('button', { type: 'button', ...(current ? { 'aria-current': 'true' } : {}) }, h('span', { class: 'name' }, name), h('span', { class: 'meta' }, meta))
+      btn.addEventListener('click', () => {
+        if (!current) this.cb.onPick(id)
+      })
+      return h('li', {}, btn)
+    }
+    const items = c.streets.map(({ way, distanceM }) => {
+      const t = way.tags
+      const name = t['name'] || t['ref'] || `Way ${way.id}`
+      const meta = [t['ref'] && t['name'] ? t['ref'] : '', t['highway'] ?? '', `way/${way.id}`, distanceM < 1 ? '< 1 m' : `${Math.round(distanceM)} m`]
+      return item(way.id, name, meta.filter(Boolean).join(' · '))
+    })
+    if (c.hintWayId && !c.streets.some((s) => s.way.id === c.hintWayId)) {
+      items.push(item(c.hintWayId, `Way ${c.hintWayId}`, 'first way of the merged map segment · loads on click'))
+    }
+    return h(
+      'details',
+      { class: 'choices', open: '' },
+      h('summary', {}, `Streets at this point (${items.length})`),
+      h('p', { class: 'hint' }, 'This map segment was merged from several OSM ways. The nearest street is shown; pick another one if it is not the right segment.'),
+      h('ol', {}, ...items),
+    )
+  }
+
+  private plainHeader(title: string) {
+    return h('header', {}, h('h2', {}, title))
+  }
+
   loading(id: string) {
+    this.currentId = id
     this.show(this.header(`Way ${id}`, id), h('p', { class: 'status' }, 'Loading way…'), this.footer())
   }
 
   error(id: string, err: unknown) {
+    this.currentId = id
     let msg = 'Could not load this way.'
     let retry = false
     if (err instanceof OsmNotFoundError) msg = `Way ${id} does not exist (or was deleted).`
@@ -90,6 +161,7 @@ export class Panel {
   }
 
   way(way: OsmWay) {
+    this.currentId = way.id
     const t = way.tags
     const road = interpretLanes(t)
     const title = t['name'] || t['ref'] || `Way ${way.id}`
