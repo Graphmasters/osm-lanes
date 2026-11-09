@@ -1,6 +1,6 @@
 {
   "name": "osm-lanes",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interpret OpenStreetMap lane tags (lanes, turn:lanes, access:lanes, destination:lanes, …) of a way and render them as SVG.",
   "keywords": ["openstreetmap", "osm", "lanes", "turn:lanes", "destination:lanes", "overpass", "svg", "road", "traffic"],
   "license": "Apache-2.0",
