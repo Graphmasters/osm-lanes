@@ -1,5 +1,5 @@
 {
-  "name": "@graphmasters/osm-lanes",
+  "name": "osm-lanes",
   "version": "0.1.0",
   "description": "Interpret OpenStreetMap lane tags (lanes, turn:lanes, access:lanes, destination:lanes, …) of a way and render them as SVG.",
   "keywords": ["openstreetmap", "osm", "lanes", "turn:lanes", "destination:lanes", "overpass", "svg", "road", "traffic"],
@@ -43,11 +43,6 @@
     "assets": "node scripts/build-assets.mjs",
     "fetch-stvo": "node scripts/fetch-stvo.mjs",
     "prepublishOnly": "npm run build"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/",
-    "@graphmasters:registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=20"
