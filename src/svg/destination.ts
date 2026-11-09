@@ -1,12 +1,17 @@
 // Renders the destination sign (destination:lanes and friends) as a separate graphic whose
 // lane columns line up with the lane graphic. Consecutive lanes with the same destinations
 // share one panel, as on real lane-specific direction signs.
+//
+// The lane graphic shows oncoming lanes upside down, so their signs are a second graphic that
+// goes *below* it: the panels are drawn as if the sign were turned around (arrows on top,
+// pointing up at the lanes), but the text stays upright.
 
 import { hasDestinations, type Lane, type RoadLanes } from '../lanes/model'
 import { el, esc, round, text, toElement, SVG_NS } from './el'
 import { ICONS } from './icons'
 import { label, type Locale } from './labels'
 import { layout, MARGIN, toRoadLanes, type Column, type LanesInput, type LayoutOptions } from './layout'
+import { SignDefs } from './sign-render'
 
 export interface DestinationSignOptions extends LayoutOptions {
   ariaLabel?: string
@@ -14,7 +19,19 @@ export interface DestinationSignOptions extends LayoutOptions {
   locale?: Locale
   labels?: Partial<Record<string, string>>
   standalone?: boolean
+  /**
+   * Which signs to draw (default `above`): `above` the lane graphic for the lanes drawn upright
+   * (the way direction, and lanes usable both ways), or `below` it for the oncoming lanes that
+   * the lane graphic draws upside down (`direction: 'both'` only). Both use the lane graphic's
+   * full width, so all three line up when stacked.
+   */
+  side?: 'above' | 'below'
+  /** Prefix for element IDs (default `osml-dest`); the side is appended. */
+  idPrefix?: string
 }
+
+/** destination:symbol values drawn as StVO signs (see signs.ts) instead of Pinhead icons. */
+const SYMBOL_SIGNS: Readonly<Record<string, string>> = { motorway: '330.1' }
 
 const FONT = 'Arial Narrow, Roboto Condensed, Arial, Helvetica, sans-serif'
 const LINE_H = 13
@@ -125,7 +142,7 @@ interface Laid {
   draw: (y: number, h: number) => string
 }
 
-function layoutPanel(g: Group, laneWidth: number, highway: string | undefined): Laid {
+function layoutPanel(g: Group, laneWidth: number, highway: string | undefined, flipped: boolean, defs: SignDefs): Laid {
   const x = g.cols[0]!.x + 2
   const w = g.cols.length * laneWidth - 4
   const inner = w - 8
@@ -181,6 +198,8 @@ function layoutPanel(g: Group, laneWidth: number, highway: string | undefined): 
         return shown
           .map((s, k) => {
             const sx = x + w / 2 - total / 2 + k * (SYMBOL + 3)
+            const sign = SYMBOL_SIGNS[s]
+            if (sign) return defs.place({ key: sign, title: s }, sx + SYMBOL / 2, y + SYMBOL / 2, SYMBOL)
             const icon = ICONS[s]
             const title = el('title', {}, esc(s))
             if (!icon) {
@@ -223,25 +242,20 @@ function layoutPanel(g: Group, laneWidth: number, highway: string | undefined): 
     height: contentH + ARROW_H + 10,
     draw: (y, h) => {
       const parts = [el('rect', { x, y, width: w, height: h, rx: 4, fill: bg, stroke: border, 'stroke-width': 1.5 })]
-      let cy = y + 5
+      // The arrows point at the lanes: down from above, up from below (the panel "turned around").
+      let cy = flipped ? y + ARROW_H + 5 : y + 5
       for (const it of items) {
         parts.push(it.draw(cy))
         cy += it.h
       }
-      // one down-arrow per lane, pointing at the lane below
+      // one arrow per lane
       for (const c of g.cols) {
-        const ax = c.x + laneWidth / 2
-        const ay = y + h - ARROW_H - 3
-        parts.push(
-          el('path', {
-            d: `M${round(ax)} ${round(ay)}V${round(ay + ARROW_H - 6)}M${round(ax - 4.5)} ${round(ay + ARROW_H - 8)}L${round(ax)} ${round(ay + ARROW_H - 2)}L${round(ax + 4.5)} ${round(ay + ARROW_H - 8)}`,
-            fill: 'none',
-            stroke: fg,
-            'stroke-width': 2,
-            'stroke-linecap': 'round',
-            'stroke-linejoin': 'round',
-          }),
-        )
+        const ax = round(c.x + laneWidth / 2)
+        const ay = flipped ? y + 3 : y + h - ARROW_H - 3
+        const d = flipped
+          ? `M${ax} ${round(ay + ARROW_H)}V${round(ay + 6)}M${round(ax - 4.5)} ${round(ay + 8)}L${ax} ${round(ay + 2)}L${round(ax + 4.5)} ${round(ay + 8)}`
+          : `M${ax} ${round(ay)}V${round(ay + ARROW_H - 6)}M${round(ax - 4.5)} ${round(ay + ARROW_H - 8)}L${ax} ${round(ay + ARROW_H - 2)}L${round(ax + 4.5)} ${round(ay + ARROW_H - 8)}`
+        parts.push(el('path', { d, fill: 'none', stroke: fg, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }))
       }
       return el('g', { class: 'osml-destination-panel' }, parts)
     },
@@ -249,22 +263,27 @@ function layoutPanel(g: Group, laneWidth: number, highway: string | undefined): 
 }
 
 /**
- * Renders the destination sign as an SVG string, or '' when no lane carries destination
- * information. Columns use the same layout (and options) as renderLanesSvg.
+ * Renders the destination sign for one side of the lane graphic (see `side`) as an SVG string,
+ * or '' when no lane of that side carries destination information. Columns use the same layout
+ * (and options) as renderLanesSvg.
  */
 export function renderDestinationSignSvg(input: LanesInput, options: DestinationSignOptions = {}): string {
   const road: RoadLanes = toRoadLanes(input)
   if (!hasDestinations(road)) return ''
-  const { laneWidth = 64, locale = 'en' } = options
+  const { laneWidth = 64, locale = 'en', side = 'above', idPrefix = 'osml-dest' } = options
+  const below = side === 'below'
   const lay = layout(road, options)
-  const cols = lay.cols.filter((c) => !c.placeholder)
-  const gs = groups(cols)
+  // Grouping runs over all columns, so a panel never spans a lane of the other side.
+  const gs = groups(lay.cols.filter((c) => !c.placeholder)).filter((g) => g.cols[0]!.rotated === below)
   if (!gs.length) return ''
-  const laid = gs.map((g) => layoutPanel(g, laneWidth, road.road.highway))
+  const defs = new SignDefs(`${idPrefix}-${side}`)
+  const laid = gs.map((g) => layoutPanel(g, laneWidth, road.road.highway, below, defs))
   const panelH = Math.max(...laid.map((l) => l.height))
   const width = lay.width
   const height = MARGIN * 2 + panelH
-  const aria = options.ariaLabel ?? label(locale, 'destinations', options.labels)
+  const aria =
+    options.ariaLabel ??
+    `${label(locale, 'destinations', options.labels)}${below ? ` (${label(locale, 'backward', options.labels)})` : ''}`
   return el(
     'svg',
     {
@@ -276,7 +295,11 @@ export function renderDestinationSignSvg(input: LanesInput, options: Destination
       'aria-label': aria,
       class: options.className ?? 'osml-destinations',
     },
-    [el('title', {}, esc(aria)), ...laid.map((l) => l.draw(MARGIN, panelH))],
+    (() => {
+      const panels = laid.map((l) => l.draw(MARGIN, panelH))
+      const d = defs.defs()
+      return [el('title', {}, esc(aria)), d ? el('defs', {}, d) : '', ...panels]
+    })(),
   )
 }
 

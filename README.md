@@ -55,7 +55,11 @@ const way = await fetchWayFromOsmApi(26580967)
 // or from Overpass: await fetchWay(26580967, { endpoint: 'https://overpass-api.de/api/interpreter' })
 const road = interpretLanes(way.tags)
 console.log(road.forward.map((lane) => lane.turn), road.warnings)
-document.body.insertAdjacentHTML('beforeend', renderDestinationSignSvg(road) + renderLanesSvg(road))
+// signs for the lanes in way direction above, for the oncoming lanes below the lane diagram
+document.body.insertAdjacentHTML(
+  'beforeend',
+  renderDestinationSignSvg(road) + renderLanesSvg(road) + renderDestinationSignSvg(road, { side: 'below' }),
+)
 ```
 
 | Function | Returns |
@@ -63,7 +67,7 @@ document.body.insertAdjacentHTML('beforeend', renderDestinationSignSvg(road) + r
 | `interpretLanes(tags)` | `RoadLanes`: `forward`, `backward` and `bothWays` lanes (left to right as seen by their drivers), `cycleways` (`left` / `right`), `oneway`, road-level values and `warnings`. |
 | `renderLanesSvg(input, options?)` | SVG string, or `''` if the way has no lanes. `input` may be tags, an `OsmWay` or a `RoadLanes`. |
 | `renderLanesElement(input, options?)` | `SVGSVGElement \| null` (browser). |
-| `renderDestinationSignSvg(input, options?)` | SVG string, or `''` without `destination:lanes`. Uses the same column layout as the lane diagram. |
+| `renderDestinationSignSvg(input, options?)` | SVG string, or `''` without destinations on that side. Uses the same column layout and width as the lane diagram. Option `side`: `above` (default; lanes in way direction, arrows pointing down) or `below` (oncoming lanes, which the lane diagram draws upside down: the sign is turned around, arrows on top pointing up, text kept upright). |
 | `renderDestinationSignElement(input, options?)` | `SVGSVGElement \| null` (browser). |
 | `getLanesLegend(road, { locale })` | Legend entries for the symbols in a diagram (`en`, `de`). |
 | `fetchWayFromOsmApi(id, options?)` | `Promise<OsmWay>` from `/api/0.6/way/{id}/full.json` (tags, geometry, bounds, last edit, version). Option `baseUrl`. |
@@ -115,7 +119,7 @@ supported too.
 | [`maxweight:lanes*`](https://wiki.openstreetmap.org/wiki/Key:maxweight) | Weight limit per lane. |
 | [`destination:lanes*`](https://wiki.openstreetmap.org/wiki/Key:destination) | Signposted destinations per lane. |
 | [`destination:ref:lanes*`](https://wiki.openstreetmap.org/wiki/Key:destination:ref) | Signposted route numbers per lane. |
-| [`destination:symbol:lanes*`](https://wiki.openstreetmap.org/wiki/Key:destination:symbol) | Signposted symbols (airport, …) per lane. |
+| [`destination:symbol:lanes*`](https://wiki.openstreetmap.org/wiki/Key:destination:symbol) | Signposted symbols per lane: `motorway` as StVO sign 330.1 (Autobahn), others (airport, centre, …) as Pinhead icons. |
 | [`destination:colour:lanes*`](https://wiki.openstreetmap.org/wiki/Key:destination:colour) | Background colour of the destination sign per lane. |
 | [`overtaking`](https://wiki.openstreetmap.org/wiki/Key:overtaking) | Overtaking prohibition (solid centre line). |
 | [`cycleway / cycleway:both / cycleway:left / cycleway:right`](https://wiki.openstreetmap.org/wiki/Key:cycleway) | Cycle lanes, cycle tracks, shared lanes and separately mapped cycleways beside the carriageway. |
@@ -194,7 +198,8 @@ npm run build:app   # demo → _site/
 ```
 
 Third-party graphics are regenerated with `npm run fetch-stvo` (downloads the public-domain sign
-SVGs from Wikimedia Commons and checks their licence templates) and `npm run assets` (inlines Pinhead
+SVGs from Wikimedia Commons and checks their licence templates; `npm run fetch-stvo -- 330.1`
+fetches only the given signs) and `npm run assets` (inlines Pinhead
 icons and the signs into `src/svg/`). The generated files are committed.
 
 ## Inspiration

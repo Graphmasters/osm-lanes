@@ -50,6 +50,7 @@ element IDs for embedding.
 | Z. 275-30 | [Zeichen 275-30 - Vorgeschriebene Mindestgeschwindigkeit, StVO 2017.svg](https://commons.wikimedia.org/wiki/File:Zeichen_275-30_-_Vorgeschriebene_Mindestgeschwindigkeit,_StVO_2017.svg) | PD-GermanGov, PD-VzKat | – |
 | Z. 265-3.8 | [Zeichen 265-3,8 - Verbot für Fahrzeuge über angegebene tatsächliche Höhe, StVO 2017.svg](https://commons.wikimedia.org/wiki/File:Zeichen_265-3,8_-_Verbot_f%C3%BCr_Fahrzeuge_%C3%BCber_angegebene_tats%C3%A4chliche_H%C3%B6he,_StVO_2017.svg) | PD-GermanGov, PD-VzKat | – |
 | Z. 262-5.5 | [Zeichen 262-5,5 - Verbot für Fahrzeuge über angegebene tatsächliche Masse, StVO 2017.svg](https://commons.wikimedia.org/wiki/File:Zeichen_262-5,5_-_Verbot_f%C3%BCr_Fahrzeuge_%C3%BCber_angegebene_tats%C3%A4chliche_Masse,_StVO_2017.svg) | PD-GermanGov, PD-VzKat | – |
+| Z. 330.1 | [Zeichen 330.1 - Autobahn, StVO 2013.svg](https://commons.wikimedia.org/wiki/File:Zeichen_330.1_-_Autobahn,_StVO_2013.svg) (used as `destination:symbol=motorway`) | PD-GermanGov, PD-VzKat | – |
 
 Speed, height and weight values for which no Commons file is included (for example a 45 km/h
 limit) are drawn as simplified circular signs by osm-lanes' own code (`src/svg/sign-render.ts`).

@@ -175,24 +175,36 @@ export class Panel {
     const title = t['name'] || t['ref'] || `Way ${way.id}`
     const subtitle = [t['ref'] && t['name'] ? t['ref'] : '', t['highway'] ? `highway=${t['highway']}` : ''].filter(Boolean).join(' · ')
 
-    const dest = renderDestinationSignElement(road, { locale })
+    const destAbove = renderDestinationSignElement(road, { locale, side: 'above' })
+    const destBelow = renderDestinationSignElement(road, { locale, side: 'below' })
     const lanes = renderLanesElement(road, { locale })
     // The lane graphic is drawn in way direction ("up"); the compass says where that points.
     const compass = renderCompassElement(wayBearing(way.geometry), { locale })
 
-    const graphics = h(
-      'div',
-      { class: 'graphics' },
-      dest ? h('figure', {}, dest, h('figcaption', {}, 'Destination sign (destination:lanes)')) : null,
-      lanes
-        ? h(
+    // One grid column holds the signs and the lane graphic, so their lane columns line up; the
+    // compass sits in a second column next to the lanes.
+    const cell = (node: Element | null, cls: string) => {
+      node?.classList.add(cls)
+      return node
+    }
+    const caption = [
+      compass ? 'Lanes in way direction (compass and map arrows)' : 'Lanes in way direction',
+      destAbove || destBelow ? `destination signs ${destAbove && destBelow ? 'above and below (oncoming lanes)' : destBelow ? 'below (oncoming lanes)' : 'above'}` : '',
+    ]
+      .filter(Boolean)
+      .join('; ')
+    const graphics = lanes
+      ? h(
+          'div',
+          { class: 'graphics' },
+          h(
             'figure',
             {},
-            h('div', { class: 'lanes-row' }, lanes, compass),
-            h('figcaption', {}, compass ? 'Lanes in way direction (compass and map arrows)' : 'Lanes in way direction'),
-          )
-        : null,
-    )
+            h('div', { class: 'lane-stack' }, cell(destAbove, 'dest-above'), cell(lanes, 'lanes'), cell(compass, 'compass'), cell(destBelow, 'dest-below')),
+            h('figcaption', {}, caption),
+          ),
+        )
+      : null
 
     const warnings = road.warnings.length
       ? h(
@@ -213,7 +225,7 @@ export class Panel {
 
     this.show(
       this.header(title, way.id, subtitle),
-      lanes ? graphics : h('p', { class: 'status' }, 'This way has no lane tags. ', ext('https://wiki.openstreetmap.org/wiki/Lanes', 'How to tag lanes')),
+      graphics ?? h('p', { class: 'status' }, 'This way has no lane tags. ', ext('https://wiki.openstreetmap.org/wiki/Lanes', 'How to tag lanes')),
       warnings,
       tags,
       this.footer(way),

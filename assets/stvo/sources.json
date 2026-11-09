@@ -302,5 +302,18 @@
     "author": "Nach den amtlichen Vorgaben digital umgesetzt durch: Mediatus",
     "sha256": "2836f03c4bdf3d47e0fe1bd2605d46b04a6954c49af8489f767486daa400c15a",
     "retrieved": "2026-11-08"
+  },
+  "330.1": {
+    "title": "File:Zeichen 330.1 - Autobahn, StVO 2013.svg",
+    "page": "https://commons.wikimedia.org/wiki/File:Zeichen_330.1_-_Autobahn,_StVO_2013.svg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/0/07/Zeichen_330.1_-_Autobahn%2C_StVO_2013.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+    "licence": "Public domain",
+    "licenceTemplates": [
+      "Template:PD-GermanGov",
+      "Template:PD-VzKat"
+    ],
+    "author": "vectorized by",
+    "sha256": "d66401bfc8561296b83bbcd67ea388daea827143ae348368a73a202c26c0bbfc",
+    "retrieved": "2026-11-09"
   }
 }
