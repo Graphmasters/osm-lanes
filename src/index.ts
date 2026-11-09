@@ -32,6 +32,7 @@ export type { OsmWay, OsmWaySource, OsmElementType, LatLon, BBox } from './osm/t
 
 // interpretation
 export { interpretLanes, type Tags } from './lanes/interpret'
+export { reverseRoadLanes } from './lanes/reverse'
 export {
   cyclewayDirection,
   hasCycleways,
