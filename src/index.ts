@@ -6,12 +6,18 @@ export {
   fetchWayFromOsmApi,
   overpassWayQuery,
   osmApiWayUrl,
+  osmApiMapUrl,
+  fetchWaysInBbox,
+  MAX_BBOX_AREA,
+  type FetchWaysInBboxOptions,
   DEFAULT_OVERPASS_ENDPOINT,
   DEFAULT_OSM_API_BASE_URL,
   type FetchWayOptions,
   type FetchWayFromOsmApiOptions,
 } from './osm/fetch'
-export { parseOverpassJson, parseOsmApiJson } from './osm/parse'
+export { parseOverpassJson, parseOsmApiJson, parseOsmApiWays } from './osm/parse'
+export { bboxAround, distanceToWay } from './osm/geometry'
+export { isStreet, STREET_HIGHWAYS } from './osm/street'
 export { decodeTileFeatureId, type DecodedFeatureId } from './osm/tile-id'
 export {
   OsmError,
@@ -22,7 +28,7 @@ export {
   OsmTimeoutError,
 } from './osm/errors'
 export { wayBearing } from './osm/bearing'
-export type { OsmWay, OsmWaySource, OsmElementType, LatLon } from './osm/types'
+export type { OsmWay, OsmWaySource, OsmElementType, LatLon, BBox } from './osm/types'
 
 // interpretation
 export { interpretLanes, type Tags } from './lanes/interpret'

@@ -84,19 +84,44 @@ export function parseOverpassJson(json: unknown, wayId: string | number): OsmWay
  */
 export function parseOsmApiJson(json: unknown, wayId: string | number): OsmWay {
   const id = String(wayId)
+  const elements = osmElements(json)
+  const el = pick(elements, 'way', id) as ApiElement | undefined
+  if (!el || el.visible === false) throw new OsmNotFoundError('way', id)
+  return osmApiWay(el, nodeIndex(elements))
+}
+
+/**
+ * Parses an OSM API v0.6 document holding several ways and their nodes (e.g. `/api/0.6/map`)
+ * and returns every visible way, with geometry rebuilt from the nodes, in document order.
+ *
+ * @throws OsmParseError when the document is not OSM JSON
+ */
+export function parseOsmApiWays(json: unknown): OsmWay[] {
+  const elements = osmElements(json)
+  const nodes = nodeIndex(elements)
+  return elements.filter((e) => e.type === 'way' && e.visible !== false && e.id !== undefined).map((e) => osmApiWay(e, nodes))
+}
+
+type ApiElement = RawElement & Record<string, unknown>
+
+function osmElements(json: unknown): ApiElement[] {
   if (!isObject(json) || !Array.isArray(json.elements)) {
     throw new OsmParseError('Response is not an OSM JSON document')
   }
-  const elements = json.elements as (RawElement & Record<string, unknown>)[]
-  const el = pick(elements, 'way', id) as (RawElement & Record<string, unknown>) | undefined
-  if (!el || el.visible === false) throw new OsmNotFoundError('way', id)
+  return json.elements as ApiElement[]
+}
 
+function nodeIndex(elements: readonly ApiElement[]): Map<string, LatLon> {
   const nodes = new Map<string, LatLon>()
   for (const e of elements) {
     if (e.type === 'node' && typeof e.lat === 'number' && typeof e.lon === 'number') {
       nodes.set(String(e.id), { lat: e.lat, lon: e.lon })
     }
   }
+  return nodes
+}
+
+function osmApiWay(el: ApiElement, nodes: Map<string, LatLon>): OsmWay {
   const geometry: LatLon[] = []
   if (Array.isArray(el.nodes)) {
     for (const ref of el.nodes) {
@@ -104,8 +129,7 @@ export function parseOsmApiJson(json: unknown, wayId: string | number): OsmWay {
       if (p) geometry.push(p)
     }
   }
-
-  const way: OsmWay = { type: 'way', id, tags: parseTags(el.tags), source: 'osm-api' }
+  const way: OsmWay = { type: 'way', id: String(el.id), tags: parseTags(el.tags), source: 'osm-api' }
   if (geometry.length) {
     way.geometry = geometry
     way.bounds = {

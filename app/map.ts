@@ -1,17 +1,22 @@
-// MapLibre map with the Graphmasters basemap.world style (basemap.de design on OpenFreeMap tiles). Road features of the `transportation`
-// source layer are hoverable/clickable; their tile feature ID encodes the OSM way ID.
-// Features that planetiler merged from several ways (ID suffix 0) are not selectable: their ID
-// names only the first merged way, which is often not the segment under the pointer.
+// MapLibre map with the Graphmasters basemap.world style (basemap.de design on OpenFreeMap tiles). Street features of the
+// `transportation` source layer are hoverable/clickable; their tile feature ID encodes the OSM way ID.
+// Features that planetiler merged from several ways (ID suffix 0) name only the first merged way,
+// which is often not the segment under the pointer; for those the app looks up the streets at the
+// clicked point instead (see main.ts).
 
 import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { decodeTileFeatureId, type LatLon, type OsmWay } from '../src/index'
+import type { LatLon, OsmWay } from '../src/index'
 
 export const STYLE_URL = 'https://graphmasters.github.io/basemap-world-openfreemap/style.json'
 /** Below this zoom most tile features are merged from several ways, so selection is disabled. */
 export const MIN_SELECT_ZOOM = 14
 
-/** OpenMapTiles `transportation` classes that represent ways usable by road traffic or people. */
+/**
+ * OpenMapTiles `transportation` classes of streets — the ways lane tags are about. Not selectable:
+ * `path` (footways, cycleways, pedestrian areas, steps, bridleways), `track`, `bus_guideway`,
+ * `raceway`, railways and ferries. Cycle lanes and tracks tagged on a street show with the street.
+ */
 const SELECTABLE_CLASSES = new Set([
   'motorway',
   'trunk',
@@ -20,11 +25,7 @@ const SELECTABLE_CLASSES = new Set([
   'tertiary',
   'minor',
   'service',
-  'track',
-  'path',
   'busway',
-  'bus_guideway',
-  'raceway',
   'motorway_construction',
   'trunk_construction',
   'primary_construction',
@@ -32,18 +33,12 @@ const SELECTABLE_CLASSES = new Set([
   'tertiary_construction',
   'minor_construction',
   'service_construction',
-  'track_construction',
-  'path_construction',
 ])
-
-/** True when a tile feature ID encodes exactly one OSM way (not a merged feature). */
-function isSingleWay(id: MapGeoJSONFeature['id']): boolean {
-  const d = decodeTileFeatureId(id)
-  return d.kind === 'element' && d.type === 'way'
-}
 
 const HOVER_LAYER = 'osml-hover'
 const SELECTED_SOURCE = 'osml-selected'
+const CANDIDATES_SOURCE = 'osml-candidates'
+const PREVIEW_SOURCE = 'osml-preview'
 const DIRECTION_ICON = 'osml-direction'
 
 /**
@@ -76,11 +71,15 @@ function directionIcon(): ImageData {
 export interface RoadMap {
   map: maplibregl.Map
   showWay(way: OsmWay | null, fit: boolean): void
+  /** Outlines other ways the user can choose from (empty array clears them). */
+  showCandidates(ways: readonly OsmWay[]): void
+  /** Highlights a way while its list entry is hovered (null clears it). */
+  previewWay(way: OsmWay | null): void
 }
 
 export function createMap(
   container: HTMLElement,
-  onSelect: (feature: MapGeoJSONFeature) => void,
+  onSelect: (feature: MapGeoJSONFeature, at: LatLon) => void,
   onZoomHint: (tooLow: boolean) => void,
 ): RoadMap {
   const map = new maplibregl.Map({
@@ -123,6 +122,27 @@ export function createMap(
       'source-layer': 'transportation',
       filter: ['==', ['id'], -1],
       paint: { 'line-color': '#1a73e8', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 14], 'line-opacity': 0.45 },
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+    })
+    map.addSource(CANDIDATES_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+    map.addLayer({
+      id: CANDIDATES_SOURCE,
+      type: 'line',
+      source: CANDIDATES_SOURCE,
+      paint: {
+        'line-color': '#1a73e8',
+        'line-width': ['interpolate', ['linear'], ['zoom'], 14, 2, 18, 5],
+        'line-dasharray': [2, 1.5],
+        'line-opacity': 0.9,
+      },
+      layout: { 'line-join': 'round' },
+    })
+    map.addSource(PREVIEW_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+    map.addLayer({
+      id: PREVIEW_SOURCE,
+      type: 'line',
+      source: PREVIEW_SOURCE,
+      paint: { 'line-color': '#1a73e8', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 6, 18, 16], 'line-opacity': 0.6 },
       layout: { 'line-cap': 'round', 'line-join': 'round' },
     })
     map.addSource(SELECTED_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
@@ -170,7 +190,7 @@ export function createMap(
     ]
     return map
       .queryRenderedFeatures(box, { layers: roadLayers })
-      .find((f) => SELECTABLE_CLASSES.has(String(f.properties['class'])) && isSingleWay(f.id))
+      .find((f) => SELECTABLE_CLASSES.has(String(f.properties['class'])))
   }
 
   let hoverId: number | string | undefined
@@ -193,11 +213,36 @@ export function createMap(
       return
     }
     const f = roadAt(e.point)
-    if (f) onSelect(f)
+    if (f) onSelect(f, { lat: e.lngLat.lat, lon: e.lngLat.lng })
   })
 
   return {
     map,
+    showCandidates(ways) {
+      whenReady(() => {
+        const src = map.getSource(CANDIDATES_SOURCE) as GeoJSONSource | undefined
+        src?.setData({
+          type: 'FeatureCollection',
+          features: ways
+            .filter((w) => (w.geometry?.length ?? 0) > 1)
+            .map((w) => ({
+              type: 'Feature' as const,
+              properties: { id: w.id },
+              geometry: { type: 'LineString' as const, coordinates: w.geometry!.map((p: LatLon) => [p.lon, p.lat]) },
+            })),
+        })
+      })
+    },
+    previewWay(way) {
+      whenReady(() => {
+        const src = map.getSource(PREVIEW_SOURCE) as GeoJSONSource | undefined
+        const coords = (way?.geometry ?? []).map((p: LatLon) => [p.lon, p.lat])
+        src?.setData({
+          type: 'FeatureCollection',
+          features: coords.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } }] : [],
+        })
+      })
+    },
     showWay(way, fit) {
       whenReady(() => {
         const src = map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined

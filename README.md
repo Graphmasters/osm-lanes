@@ -27,7 +27,7 @@ appear in the side panel. Every way has its own URL, e.g.
   - `wayBearing()` / `renderCompassSvg()`: the average compass bearing of a way and a compass rose
     showing it, to tell which way the lane diagram (drawn in way direction) points.
 - **Demo app** (GitHub Pages): a MapLibre map with the Graphmasters
-  [basemap.world](https://graphmasters.github.io/basemap-world-openfreemap/) style on OpenFreeMap tiles. Click a road to
+  [basemap.world](https://graphmasters.github.io/basemap-world-openfreemap/) style on OpenFreeMap tiles. Click a street to
   see its lane diagram, destination sign, notes and raw tags (each tag linked to its OSM wiki page).
   The selected way is highlighted with arrows in its drawing direction, and a compass rose next to
   the lane diagram shows the way's average bearing — the lane diagram's "up".
@@ -70,6 +70,9 @@ document.body.insertAdjacentHTML('beforeend', renderDestinationSignSvg(road) + r
 | `fetchWay(id, options?)` | `Promise<OsmWay>` from Overpass (tags, geometry, bounds, data timestamp). Option `endpoint`. Both fetchers throw `OsmNotFoundError`, `OsmRateLimitedError`, `OsmTimeoutError`, … |
 | `wayBearing(geometry)` | Average bearing of a way's geometry in drawing direction (degrees clockwise from north, length-weighted circular mean), or `null` for fewer than two nodes or ways that loop back on themselves. |
 | `renderCompassSvg(bearing, options?)` / `renderCompassElement(…)` | Compass rose (north up) with an arrow to `bearing` and the bearing as text (`47° NE`), or `''` / `null` without a bearing. Options `locale`, `size`, `labels`, … |
+| `fetchWaysInBbox(bbox, options?)` | `Promise<OsmWay[]>`: all ways with a node inside a small box, from `/api/0.6/map.json` (boxes up to `MAX_BBOX_AREA`). |
+| `bboxAround(point, metres)`, `distanceToWay(point, geometry)` | A box around a point; the distance in metres from a point to a way's line. |
+| `isStreet(tags)`, `STREET_HIGHWAYS` | Whether a way is a street (motorway … residential, living_street, service, busway, `_link` roads, streets under construction) rather than a footway, cycleway, path, pedestrian area or track. |
 | `decodeTileFeatureId(id)` | `{ kind: 'element', type, id }`, `{ kind: 'merged', hintWayId }` or `{ kind: 'invalid' }`. |
 | `SUPPORTED_TAGS`, `wikiUrlForKey(key)` | Supported keys and their OSM wiki pages. |
 
@@ -132,16 +135,24 @@ and the count-style `lanes:psv` / `lanes:bus`.
 
 ## How way selection works in the demo
 
-OpenFreeMap's vector tiles (built with planetiler, OpenMapTiles schema) encode the source OSM
-element in each feature ID as `osmId × 10 + type` (1 = node, 2 = way, 3 = relation). The demo reads
-that ID from the clicked road feature and fetches that way. Planetiler **merges** adjacent road
-segments with identical map attributes into one feature (type digit `0`); such a feature keeps only
-the ID of the first merged way, which is often not the segment under the pointer. The demo
-therefore only lets you select features that stand for exactly one way:
+Only **streets** can be selected (OpenMapTiles classes motorway … minor, service and busway).
+Footways, cycleways, paths, pedestrian areas, steps and tracks rarely carry lane tags; cycle lanes
+and tracks tagged on a street (`cycleway=*`) are shown with that street.
 
-- Below zoom 14 almost every road feature is merged, so selection starts at zoom 14 (the tiles'
-  maximum zoom; higher zoom levels only enlarge them).
-- At zoom 14 and above, merged features (roughly a quarter of the roads) are not clickable.
+OpenFreeMap's vector tiles (built with planetiler, OpenMapTiles schema) encode the source OSM
+element in each feature ID as `osmId × 10 + type` (1 = node, 2 = way, 3 = relation). For such a
+feature the demo fetches that way directly. Planetiler **merges** adjacent segments with identical
+map attributes into one feature (type digit `0`; below zoom 14 almost all, at zoom 14 and above
+roughly a quarter of the roads). A merged feature keeps only the ID of the first merged way, which
+is often not the segment under the pointer, and the tiles carry no list of the other ways.
+
+For a merged feature the demo therefore asks the OSM API for the ways at the clicked point (one
+`/api/0.6/map` request for a box of about 30 m × 30 m) and lists the streets there, nearest first,
+outlined in blue on the map. The nearest one is shown right away; the others (and the ID the tile
+carries) are one click away. The API only returns ways with a node inside the box, so if no street
+is close to the click, one larger box (about 120 m × 120 m) is tried.
+
+Selection starts at zoom 14, the tiles' maximum zoom (higher zoom levels only enlarge them).
 
 ## Data sources and usage policies
 
@@ -157,8 +168,9 @@ therefore only lets you select features that stand for exactly one way:
   configurable endpoint. If you build on this library, **please pass your own `endpoint`**; outside
   browsers, also send a `User-Agent` that identifies your application.
 - **The demo** loads a way from the OSM API first, because a busy public Overpass instance can take
-  30 s or more to answer, and falls back to Overpass when the API is busy or unreachable. It
-  requests a way only on an explicit click or deep link, caches results per session, keeps at most
+  30 s or more to answer, and falls back to Overpass when the API is busy or unreachable. For merged
+  map features it looks up the ways at the clicked point with one small `/map` request (OSM API
+  only). It requests data only on an explicit click or deep link, caches results per session, keeps at most
   one request in flight and backs off when a server is busy. Both endpoints can be changed at build
   time with `VITE_OSM_API_BASE_URL` and `VITE_OVERPASS_ENDPOINT`.
 - **Tiles and map style.** Vector tiles from [OpenFreeMap](https://openfreemap.org/) (OpenMapTiles

@@ -162,6 +162,60 @@ a {
   font-weight: 600;
 }
 
+#panel .choices {
+  margin: 0 0 10px;
+}
+
+#panel .choices .hint {
+  margin: 4px 0 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+#panel .choices ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#panel .choices button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px dashed #1a73e8;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+#panel .choices button:hover {
+  background: #eef4fd;
+}
+
+#panel .choices button[aria-current='true'] {
+  border: 2px solid #e8590c;
+  padding: 5px 9px;
+  background: #fff4ec;
+  cursor: default;
+}
+
+#panel .choices .name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+#panel .choices .meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 #panel .warnings ul {
   padding-left: 18px;
   margin: 6px 0;
