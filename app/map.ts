@@ -4,9 +4,15 @@
 // which is often not the segment under the pointer; for those the app looks up the streets at the
 // clicked point instead (see main.ts).
 
-import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
+import type { GeoJSONSource, MapGeoJSONFeature } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'
 import type { LatLon, OsmWay } from '../src/index'
+
+// MapLibre 6 resolves its worker file at runtime, which bundlers cannot follow; hand it the
+// worker URL that Vite emits instead.
+maplibregl.setWorkerUrl(maplibreWorkerUrl)
 
 export const STYLE_URL = 'https://graphmasters.github.io/basemap-world-openfreemap/style.json'
 /** Below this zoom most tile features are merged from several ways, so selection is disabled. */
