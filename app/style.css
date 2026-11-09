@@ -137,15 +137,29 @@ a {
   height: auto;
 }
 
-#panel .lanes-row {
-  display: flex;
-  align-items: center;
+#panel .lane-stack {
+  display: grid;
+  grid-template-columns: auto auto;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
 }
 
-#panel .lanes-row .osml-compass {
-  flex: none;
+#panel .lane-stack > .dest-above {
+  grid-area: 1 / 1;
+}
+
+#panel .lane-stack > .lanes {
+  grid-area: 2 / 1;
+}
+
+#panel .lane-stack > .compass {
+  grid-area: 2 / 2;
+}
+
+#panel .lane-stack > .dest-below {
+  grid-area: 3 / 1;
 }
 
 #panel figcaption {

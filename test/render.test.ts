@@ -168,6 +168,46 @@ describe('destination sign', () => {
     expect(svg).toContain(ICONS.airport!.d)
   })
 
+  it('draws oncoming lanes on a separate sign below the lanes, arrows up and text upright', () => {
+    const road = interpretLanes({
+      ...twoWay,
+      'destination:lanes:forward': 'Hamburg|Zentrum',
+      'destination:lanes:backward': 'Hildesheim|Messe',
+    })
+    const cols = layout(road).cols
+    const above = renderDestinationSignSvg(road)
+    const below = renderDestinationSignSvg(road, { side: 'below' })
+    expect(above).toContain('>Hamburg</text>')
+    expect(above).not.toContain('Hildesheim')
+    expect(below).toContain('>Hildesheim</text>')
+    expect(below).not.toContain('Hamburg')
+    // same width as the lane graphic, panels over their own lane columns
+    expect(below).toContain(`width="${layout(road).width}"`)
+    expect(below).toContain(`<rect x="${cols[0]!.x + 2}"`)
+    // text is never rotated; the arrows point up (head at the top)
+    expect(below).not.toMatch(/rotate\(/)
+    const arrow = (svg: string) => svg.match(/<path d="M([\d.]+) ([\d.]+)V([\d.]+)/)!.slice(2).map(Number)
+    const [startUp, endUp] = arrow(below)
+    expect(endUp!).toBeLessThan(startUp!)
+    const [startDown, endDown] = arrow(above)
+    expect(endDown!).toBeGreaterThan(startDown!)
+    expect(below).toContain('aria-label="Destination sign (against way direction)"')
+  })
+
+  it('returns no sign for a side without destinations', () => {
+    const road = interpretLanes({ ...twoWay, 'destination:lanes:backward': 'Hildesheim|Messe' })
+    expect(renderDestinationSignSvg(road)).toBe('')
+    expect(renderDestinationSignSvg(road, { side: 'below' })).not.toBe('')
+  })
+
+  it('shows destination:symbol=motorway as the StVO Autobahn sign', () => {
+    const svg = renderDestinationSignSvg({ oneway: 'yes', lanes: '1', 'destination:lanes': 'Hamburg', 'destination:symbol:lanes': 'motorway' })
+    expect(SIGNS['330.1']).toBeDefined()
+    expect(svg).toContain('<symbol id="osml-dest-above-sign-330_1"')
+    expect(svg).toContain('href="#osml-dest-above-sign-330_1"')
+    expect(svg).toContain('<title>motorway</title>')
+  })
+
   it('honours destination:colour and escapes text', () => {
     const svg = renderDestinationSignSvg({
       oneway: 'yes',

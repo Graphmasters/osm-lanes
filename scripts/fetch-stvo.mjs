@@ -8,10 +8,12 @@
 // CC-BY-SA/GFDL by their vectorizer — those are rejected so that only public-domain
 // material ends up in this Apache-2.0 repository. The script exits non-zero on any rejection.
 //
-// Usage: node scripts/fetch-stvo.mjs   (run rarely; the result is committed)
+// Usage: node scripts/fetch-stvo.mjs [key …]   (run rarely; the result is committed)
+//   With keys (e.g. `330.1`), only those signs are fetched and merged into sources.json; the
+//   other files stay untouched.
 
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -37,6 +39,8 @@ export const SIGNS = {
   '253': 'File:Zeichen 253 - Verbot für Kraftfahrzeuge mit einem zulässigen Gesamtgewicht über 7,5t, StVO 1992.svg',
   '254': 'File:Zeichen 254 - Verbot für Radfahrer, StVO 1992.svg',
   '260': 'File:Zeichen 260 - Verbot für Krafträder und Mofas und sonstige mehrspurige Kraftfahrzeuge, StVO 1992.svg',
+  // destination:symbol=motorway on destination signs
+  '330.1': 'File:Zeichen 330.1 - Autobahn, StVO 2013.svg',
 }
 
 const PD_OK = /^Template:(PD-GermanGov|PD-VzKat|PD-Vz historisch|PD-Vz)$/i
@@ -76,9 +80,11 @@ async function wikidataItemsFor(fileNames) {
 
 async function main() {
   await mkdir(OUT, { recursive: true })
-  const sources = {}
+  const only = process.argv.slice(2)
+  for (const key of only) if (!SIGNS[key]) throw new Error(`Unknown sign key ${key}`)
+  const sources = only.length ? JSON.parse(await readFile(join(OUT, 'sources.json'), 'utf8')) : {}
   const rejected = []
-  for (const [key, title] of Object.entries(SIGNS)) {
+  for (const [key, title] of Object.entries(SIGNS).filter(([k]) => !only.length || only.includes(k))) {
     const json = await api({
       action: 'query',
       titles: title,
