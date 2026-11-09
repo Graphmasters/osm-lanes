@@ -5,6 +5,7 @@ import { interpretLanes, type Tags } from '../lanes/interpret'
 import { cyclewayDirection, type Cycleway } from '../lanes/cycleway'
 import type { Lane, RoadLanes } from '../lanes/model'
 import type { OsmWay } from '../osm/types'
+import { reverseRoadLanes } from '../lanes/reverse'
 
 export type LanesInput = RoadLanes | Tags | OsmWay
 
@@ -15,6 +16,12 @@ export interface LayoutOptions {
   drivingSide?: 'right' | 'left'
   /** Width of one lane column in SVG user units (default 64). */
   laneWidth?: number
+  /**
+   * Draw the road against the way's node order (default false): "up" is then the direction from
+   * the last to the first node, and forward/backward lanes and left/right cycleways swap. See
+   * `reverseRoadLanes`.
+   */
+  reverse?: boolean
 }
 
 export interface Column {
@@ -55,7 +62,13 @@ export interface Layout {
 
 export const MARGIN = 8
 
-export function toRoadLanes(input: LanesInput): RoadLanes {
+/** The lanes of `input`; turned around when `opts.reverse` is set. */
+export function toRoadLanes(input: LanesInput, opts: Pick<LayoutOptions, 'reverse'> = {}): RoadLanes {
+  const road = interpretInput(input)
+  return opts.reverse ? reverseRoadLanes(road) : road
+}
+
+function interpretInput(input: LanesInput): RoadLanes {
   const maybe = input as Partial<RoadLanes>
   if (Array.isArray(maybe.forward) && Array.isArray(maybe.backward) && Array.isArray(maybe.warnings)) {
     return input as RoadLanes

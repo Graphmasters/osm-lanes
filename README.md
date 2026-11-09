@@ -69,6 +69,7 @@ document.body.insertAdjacentHTML(
 | `renderLanesElement(input, options?)` | `SVGSVGElement \| null` (browser). |
 | `renderDestinationSignSvg(input, options?)` | SVG string, or `''` without destinations on that side. Uses the same column layout and width as the lane diagram. Option `side`: `above` (default; lanes in way direction, arrows pointing down) or `below` (oncoming lanes, which the lane diagram draws upside down: the sign is turned around, arrows on top pointing up, text kept upright). |
 | `renderDestinationSignElement(input, options?)` | `SVGSVGElement \| null` (browser). |
+| `reverseRoadLanes(road)` | The same `RoadLanes` seen against the way's node order: forward ↔ backward lanes, `oneway` `yes` ↔ `-1`, left ↔ right cycleways. The render option `reverse: true` applies it, e.g. to draw a way in the direction of a record that runs the other way. |
 | `getLanesLegend(road, { locale })` | Legend entries for the symbols in a diagram (`en`, `de`). |
 | `fetchWayFromOsmApi(id, options?)` | `Promise<OsmWay>` from `/api/0.6/way/{id}/full.json` (tags, geometry, bounds, last edit, version). Option `baseUrl`. |
 | `fetchWay(id, options?)` | `Promise<OsmWay>` from Overpass (tags, geometry, bounds, data timestamp). Option `endpoint`. Both fetchers throw `OsmNotFoundError`, `OsmRateLimitedError`, `OsmTimeoutError`, … |
@@ -81,8 +82,8 @@ document.body.insertAdjacentHTML(
 | `SUPPORTED_TAGS`, `wikiUrlForKey(key)` | Supported keys and their OSM wiki pages. |
 
 Render options: `direction` (`both` \| `forward` \| `backward`), `drivingSide` (`right` \| `left`),
-`laneWidth`, `showSigns`, `legend`, `locale`, `labels`, `ariaLabel`, `className`, `standalone`,
-`idPrefix`. All tag values are escaped, so the output is safe to insert into HTML.
+`reverse` (draw against the way's node order), `laneWidth`, `showSigns`, `legend`, `locale`,
+`labels`, `ariaLabel`, `className`, `standalone`, `idPrefix`. All tag values are escaped, so the output is safe to insert into HTML.
 
 The IIFE build exposes a global `OsmLanes` for `<script>` use:
 `https://unpkg.com/osm-lanes/dist/index.global.js`.

@@ -268,7 +268,7 @@ function layoutPanel(g: Group, laneWidth: number, highway: string | undefined, f
  * (and options) as renderLanesSvg.
  */
 export function renderDestinationSignSvg(input: LanesInput, options: DestinationSignOptions = {}): string {
-  const road: RoadLanes = toRoadLanes(input)
+  const road: RoadLanes = toRoadLanes(input, options)
   if (!hasDestinations(road)) return ''
   const { laneWidth = 64, locale = 'en', side = 'above', idPrefix = 'osml-dest' } = options
   const below = side === 'below'

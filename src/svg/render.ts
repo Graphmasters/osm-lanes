@@ -236,7 +236,7 @@ function legendSvg(lines: string[], y: number): string {
 
 /** Renders the lane graphic as an SVG string, or '' when the way has no lanes to draw. */
 export function renderLanesSvg(input: LanesInput, options: RenderOptions = {}): string {
-  const road = toRoadLanes(input)
+  const road = toRoadLanes(input, options)
   const { locale = 'en', showSigns = true, idPrefix = 'osml', laneWidth = 64 } = options
   const lay = layout(road, options)
   const { cols, strips } = lay
