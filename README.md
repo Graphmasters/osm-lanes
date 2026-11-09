@@ -35,11 +35,11 @@ appear in the side panel. Every way has its own URL, e.g.
 ## Library usage
 
 ```sh
-npm install @graphmasters/osm-lanes   # not yet published; use a pinned git dependency meanwhile
+npm install osm-lanes
 ```
 
 ```ts
-import { fetchWayFromOsmApi, interpretLanes, renderLanesSvg, renderDestinationSignSvg } from '@graphmasters/osm-lanes'
+import { fetchWayFromOsmApi, interpretLanes, renderLanesSvg, renderDestinationSignSvg } from 'osm-lanes'
 
 // From tags you already have …
 const svg = renderLanesSvg({
@@ -78,7 +78,7 @@ Render options: `direction` (`both` \| `forward` \| `backward`), `drivingSide` (
 `idPrefix`. All tag values are escaped, so the output is safe to insert into HTML.
 
 The IIFE build exposes a global `OsmLanes` for `<script>` use:
-`https://unpkg.com/@graphmasters/osm-lanes/dist/index.global.js` (once published).
+`https://unpkg.com/osm-lanes/dist/index.global.js`.
 
 ## Supported tags
 

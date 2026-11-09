@@ -1,30 +1,56 @@
 name: Publish to npm
 
-# Publishes @graphmasters/osm-lanes when a GitHub Release is published, using npm Trusted
-# Publishing (OIDC) — no long-lived NPM_TOKEN needed. Not used until the package is released.
+# Publishes the package when a GitHub Release is published, using npm Trusted Publishing (OIDC) —
+# no long-lived NPM_TOKEN needed. Provenance is generated automatically.
 #
 # One-time setup on npmjs.com (Package → Settings → Trusted Publisher):
-#   Publisher = GitHub Actions, Organization = Graphmasters, Repository = osm-lanes,
-#   Workflow filename = publish.yml
+#   Publisher = GitHub Actions
+#   Organization or user = Graphmasters
+#   Repository           = osm-lanes
+#   Workflow filename    = publish.yml
+#   (Environment left blank — this workflow does not use a GitHub environment.)
 on:
   release:
     types: [published]
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # trusted publishing requires a GitHub-hosted runner
     permissions:
       contents: read
-      id-token: write
+      id-token: write # required so the runner can mint the OIDC token npm verifies
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # Pinned to full commit SHAs (not floating tags): this job holds `id-token: write`, so a
+      # compromised or retagged action would run with OIDC-minting privileges. Bump deliberately.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - run: npm install -g npm@latest
+          node-version: 24 # bundles npm >= 11.5.1 (the minimum for OIDC publishing)
+          registry-url: https://registry.npmjs.org # still required, even without a token
+      # Fail fast if the release tag and package.json disagree on the version. `npm publish` uses
+      # the version in package.json and ignores the tag name, so cutting a release named vX.Y.Z
+      # without first bumping package.json silently republishes the OLD version — which npm then
+      # rejects ("cannot publish over previously published versions"). This guard turns that into a
+      # clear, immediate failure. The tag is read from an env var and never inlined as ${{ }}, so a
+      # crafted tag name cannot inject shell.
+      - name: Verify release tag matches package.json version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          tag_version="${RELEASE_TAG#v}"
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::Release tag '${RELEASE_TAG}' (version ${tag_version}) does not match package.json version ${pkg_version}. Run 'npm version <x.y.z>', merge the bump to the release target, then cut the release."
+            exit 1
+          fi
+          echo "Release tag and package.json agree on version ${pkg_version}."
+      # No `npm install -g npm@latest`: Node 24's bundled npm already satisfies the OIDC minimum
+      # (>= 11.5.1, see the node-version comment above), and a mutable @latest fetch would run
+      # unpinned third-party code on the one job that holds `id-token: write`.
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npm publish --access public
+      # No token, no --access/--provenance flags: OIDC auth, public access and provenance are
+      # inferred automatically for a public package published from a public repo.
+      - run: npm publish
