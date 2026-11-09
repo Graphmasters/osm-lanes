@@ -99,6 +99,12 @@ export function createMap(
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
 
   let roadLayers: string[] = []
+  // Work that needs the highlight layers, queued until they exist. Not `map.loaded()`: that is
+  // false whenever any source is still loading (also right after setData), and the `load` event
+  // fires only once — waiting for it then would drop the highlight for good.
+  let ready = false
+  const pending: (() => void)[] = []
+  const whenReady = (fn: () => void) => (ready ? fn() : pending.push(fn))
 
   map.on('load', () => {
     // All line layers of the OpenMapTiles `transportation` layer; railways and other non-road
@@ -151,6 +157,8 @@ export function createMap(
       },
     })
     onZoomHint(map.getZoom() < MIN_SELECT_ZOOM)
+    ready = true
+    for (const fn of pending.splice(0)) fn()
   })
 
   const roadAt = (point: maplibregl.PointLike): MapGeoJSONFeature | undefined => {
@@ -188,12 +196,10 @@ export function createMap(
     if (f) onSelect(f)
   })
 
-  const whenLoaded = (fn: () => void) => (map.loaded() && map.getSource(SELECTED_SOURCE) ? fn() : map.once('load', fn))
-
   return {
     map,
     showWay(way, fit) {
-      whenLoaded(() => {
+      whenReady(() => {
         const src = map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined
         const coords = (way?.geometry ?? []).map((p: LatLon) => [p.lon, p.lat])
         src?.setData({
