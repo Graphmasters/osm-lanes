@@ -34,6 +34,11 @@ export function cancelPending() {
 
 const isAbort = (err: unknown) => err instanceof DOMException && err.name === 'AbortError'
 
+/** A way that is already loaded, without any request. */
+export function cachedWay(id: string): OsmWay | undefined {
+  return cache.get(id)
+}
+
 export async function loadWay(id: string): Promise<OsmWay> {
   const hit = cache.get(id)
   if (hit) return hit

@@ -1,7 +1,7 @@
 import type { MapGeoJSONFeature } from 'maplibre-gl'
 import { decodeTileFeatureId } from '../src/index'
 import { createMap } from './map'
-import { cancelPending, findStreetsAt, loadWay } from './way-source'
+import { cachedWay, cancelPending, findStreetsAt, loadWay } from './way-source'
 import { Panel } from './panel'
 import type { LatLon } from '../src/index'
 import { navigateToWay, wayIdFromLocation } from './route'
@@ -18,6 +18,9 @@ const panel = new Panel(document.getElementById('panel')!, {
     navigateToWay(id)
     render(false)
   },
+  // Only ways that are already loaded (the listed streets, or the tile's way once opened): a hover
+  // never triggers a request.
+  onPreview: (id) => roadMap.previewWay((id && cachedWay(id)) || null),
 })
 
 const roadMap = createMap(document.getElementById('map')!, onSelect, (tooLow) => {

@@ -38,6 +38,7 @@ const SELECTABLE_CLASSES = new Set([
 const HOVER_LAYER = 'osml-hover'
 const SELECTED_SOURCE = 'osml-selected'
 const CANDIDATES_SOURCE = 'osml-candidates'
+const PREVIEW_SOURCE = 'osml-preview'
 const DIRECTION_ICON = 'osml-direction'
 
 /**
@@ -72,6 +73,8 @@ export interface RoadMap {
   showWay(way: OsmWay | null, fit: boolean): void
   /** Outlines other ways the user can choose from (empty array clears them). */
   showCandidates(ways: readonly OsmWay[]): void
+  /** Highlights a way while its list entry is hovered (null clears it). */
+  previewWay(way: OsmWay | null): void
 }
 
 export function createMap(
@@ -133,6 +136,14 @@ export function createMap(
         'line-opacity': 0.9,
       },
       layout: { 'line-join': 'round' },
+    })
+    map.addSource(PREVIEW_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+    map.addLayer({
+      id: PREVIEW_SOURCE,
+      type: 'line',
+      source: PREVIEW_SOURCE,
+      paint: { 'line-color': '#1a73e8', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 6, 18, 16], 'line-opacity': 0.6 },
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
     })
     map.addSource(SELECTED_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     map.addLayer({
@@ -219,6 +230,16 @@ export function createMap(
               properties: { id: w.id },
               geometry: { type: 'LineString' as const, coordinates: w.geometry!.map((p: LatLon) => [p.lon, p.lat]) },
             })),
+        })
+      })
+    },
+    previewWay(way) {
+      whenReady(() => {
+        const src = map.getSource(PREVIEW_SOURCE) as GeoJSONSource | undefined
+        const coords = (way?.geometry ?? []).map((p: LatLon) => [p.lon, p.lat])
+        src?.setData({
+          type: 'FeatureCollection',
+          features: coords.length > 1 ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } }] : [],
         })
       })
     },

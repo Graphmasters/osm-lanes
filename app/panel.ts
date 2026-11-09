@@ -40,6 +40,8 @@ export interface PanelCallbacks {
   onRetry(): void
   /** A way was picked from the list of streets at a clicked point. */
   onPick(id: string): void
+  /** A list entry is hovered or focused (id), or no longer (null). */
+  onPreview(id: string | null): void
 }
 
 /** The streets found at a clicked point of a merged map feature, offered as a list. */
@@ -65,6 +67,7 @@ export class Panel {
   }
 
   close() {
+    this.cb.onPreview(null)
     this.root.hidden = true
     this.root.replaceChildren()
   }
@@ -76,6 +79,7 @@ export class Panel {
   private show(header: Node, ...children: Child[]) {
     const close = h('button', { class: 'close', type: 'button', 'aria-label': 'Close' }, '×')
     close.addEventListener('click', () => this.cb.onClose())
+    this.cb.onPreview(null)
     const list = this.choices ? this.choiceList(this.choices) : null
     this.root.replaceChildren(close, header, ...[list, ...children].filter((c): c is Node | string => !!c))
     this.root.hidden = false
@@ -111,6 +115,10 @@ export class Panel {
       btn.addEventListener('click', () => {
         if (!current) this.cb.onPick(id)
       })
+      btn.addEventListener('mouseenter', () => this.cb.onPreview(id))
+      btn.addEventListener('focus', () => this.cb.onPreview(id))
+      btn.addEventListener('mouseleave', () => this.cb.onPreview(null))
+      btn.addEventListener('blur', () => this.cb.onPreview(null))
       return h('li', {}, btn)
     }
     const items = c.streets.map(({ way, distanceM }) => {
