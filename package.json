@@ -2,17 +2,7 @@
   "name": "osm-lanes",
   "version": "0.2.0",
   "description": "Interpret OpenStreetMap lane tags (lanes, turn:lanes, access:lanes, destination:lanes, …) of a way and render them as SVG.",
-  "keywords": [
-    "openstreetmap",
-    "osm",
-    "lanes",
-    "turn:lanes",
-    "destination:lanes",
-    "overpass",
-    "svg",
-    "road",
-    "traffic"
-  ],
+  "keywords": ["openstreetmap", "osm", "lanes", "turn:lanes", "destination:lanes", "overpass", "svg", "road", "traffic"],
   "license": "Apache-2.0",
   "author": "Graphmasters",
   "repository": {
@@ -23,11 +13,7 @@
   "bugs": "https://github.com/Graphmasters/osm-lanes/issues",
   "type": "module",
   "sideEffects": false,
-  "files": [
-    "dist",
-    "NOTICE",
-    "ATTRIBUTION.md"
-  ],
+  "files": ["dist", "NOTICE", "ATTRIBUTION.md"],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
