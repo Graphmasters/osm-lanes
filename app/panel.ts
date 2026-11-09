@@ -8,6 +8,8 @@ import {
   OsmTimeoutError,
   renderDestinationSignElement,
   renderLanesElement,
+  renderCompassElement,
+  wayBearing,
   wikiUrlForKey,
   type Locale,
   type OsmWay,
@@ -95,12 +97,21 @@ export class Panel {
 
     const dest = renderDestinationSignElement(road, { locale })
     const lanes = renderLanesElement(road, { locale })
+    // The lane graphic is drawn in way direction ("up"); the compass says where that points.
+    const compass = renderCompassElement(wayBearing(way.geometry), { locale })
 
     const graphics = h(
       'div',
       { class: 'graphics' },
       dest ? h('figure', {}, dest, h('figcaption', {}, 'Destination sign (destination:lanes)')) : null,
-      lanes ? h('figure', {}, lanes, h('figcaption', {}, 'Lanes')) : null,
+      lanes
+        ? h(
+            'figure',
+            {},
+            h('div', { class: 'lanes-row' }, lanes, compass),
+            h('figcaption', {}, compass ? 'Lanes in way direction (compass and map arrows)' : 'Lanes in way direction'),
+          )
+        : null,
     )
 
     const warnings = road.warnings.length

@@ -24,9 +24,13 @@ appear in the side panel. Every way has its own URL, e.g.
     or from an Overpass API instance.
   - `decodeTileFeatureId()`: OSM way IDs from vector-tile feature IDs (OpenFreeMap/planetiler
     encoding).
+  - `wayBearing()` / `renderCompassSvg()`: the average compass bearing of a way and a compass rose
+    showing it, to tell which way the lane diagram (drawn in way direction) points.
 - **Demo app** (GitHub Pages): a MapLibre map with the Graphmasters
   [basemap.world](https://graphmasters.github.io/basemap-world-openfreemap/) style on OpenFreeMap tiles. Click a road to
   see its lane diagram, destination sign, notes and raw tags (each tag linked to its OSM wiki page).
+  The selected way is highlighted with arrows in its drawing direction, and a compass rose next to
+  the lane diagram shows the way's average bearing — the lane diagram's "up".
 
 ## Library usage
 
@@ -64,6 +68,8 @@ document.body.insertAdjacentHTML('beforeend', renderDestinationSignSvg(road) + r
 | `getLanesLegend(road, { locale })` | Legend entries for the symbols in a diagram (`en`, `de`). |
 | `fetchWayFromOsmApi(id, options?)` | `Promise<OsmWay>` from `/api/0.6/way/{id}/full.json` (tags, geometry, bounds, last edit, version). Option `baseUrl`. |
 | `fetchWay(id, options?)` | `Promise<OsmWay>` from Overpass (tags, geometry, bounds, data timestamp). Option `endpoint`. Both fetchers throw `OsmNotFoundError`, `OsmRateLimitedError`, `OsmTimeoutError`, … |
+| `wayBearing(geometry)` | Average bearing of a way's geometry in drawing direction (degrees clockwise from north, length-weighted circular mean), or `null` for fewer than two nodes or ways that loop back on themselves. |
+| `renderCompassSvg(bearing, options?)` / `renderCompassElement(…)` | Compass rose (north up) with an arrow to `bearing` and the bearing as text (`47° NE`), or `''` / `null` without a bearing. Options `locale`, `size`, `labels`, … |
 | `decodeTileFeatureId(id)` | `{ kind: 'element', type, id }`, `{ kind: 'merged', hintWayId }` or `{ kind: 'invalid' }`. |
 | `SUPPORTED_TAGS`, `wikiUrlForKey(key)` | Supported keys and their OSM wiki pages. |
 

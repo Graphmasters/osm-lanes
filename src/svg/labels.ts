@@ -45,6 +45,7 @@ export const LABELS = {
     'cycleway.shared_lane': 'lane shared with bicycles (pictogram)',
     'cycleway.share_busway': 'bus lane shared with bicycles',
     'cycleway.separate': 'cycleway mapped as a separate way',
+    compass: 'Way direction (up in the lane graphic)',
   },
   de: {
     lanes: 'Fahrstreifen',
@@ -88,6 +89,7 @@ export const LABELS = {
     'cycleway.shared_lane': 'Fahrstreifen mit Fahrradpiktogramm',
     'cycleway.share_busway': 'Bussonderfahrstreifen, Radverkehr frei',
     'cycleway.separate': 'Radweg als eigener Weg erfasst',
+    compass: 'Wegrichtung (oben in der Fahrstreifengrafik)',
   },
 } as const
 
